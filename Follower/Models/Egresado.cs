@@ -46,7 +46,7 @@ namespace Follower.Models
         public DateTime? FechaNacimiento { get; set; }
 
         
-        public DateTime? FechaEgreso { get; set; }
+        public int? FechaEgreso { get; set; }
         
         [MaxLength(100)]
         public string? Ciudad { get; set; }
