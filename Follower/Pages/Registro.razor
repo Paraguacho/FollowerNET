@@ -1,0 +1,123 @@
+﻿@page "/registro"
+@inject Follower.Data.ApplicationDbContext DbContext
+
+<!-- Barra superior -->
+<Follower.Shared.NavBar />
+
+<main class="min-h-[calc(100vh-4rem)] bg-gray-50 flex flex-col justify-center py-10 sm:px-6 lg:px-8">
+    <div class="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Registro de egresado</h1>
+        <p class="mt-2 text-sm text-gray-600">Ingresa tus datos para solicitar el acceso a la plataforma.</p>
+    </div>
+
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
+        <div class="bg-white py-8 px-6 shadow-sm rounded-xl border border-gray-200 sm:px-10">
+
+            <EditForm Model="@modelo" OnValidSubmit="ProcesarRegistro">
+                <DataAnnotationsValidator />
+
+                <div class="space-y-5">
+                    <!-- Nombres -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre(s)</label>
+                        <InputText @bind-Value="modelo.Nombres"
+                                   class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] text-sm"
+                                   placeholder="Ej. Sebastián" />
+                        <ValidationMessage For="@(() => modelo.Nombres)" class="text-red-500 text-xs mt-1" />
+                    </div>
+
+                    <!-- Apellidos -->
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Apellido paterno</label>
+                            <InputText @bind-Value="modelo.ApellidoPaterno"
+                                       class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] text-sm"
+                                       placeholder="Ej. Martínez" />
+                            <ValidationMessage For="@(() => modelo.ApellidoPaterno)" class="text-red-500 text-xs mt-1" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Apellido materno</label>
+                            <InputText @bind-Value="modelo.ApellidoMaterno"
+                                       class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] text-sm"
+                                       placeholder="Ej. Soqui" />
+                            <ValidationMessage For="@(() => modelo.ApellidoMaterno)" class="text-red-500 text-xs mt-1" />
+                        </div>
+                    </div>
+
+                    <!-- Correo electrónico -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+                        <InputText @bind-Value="modelo.Correo"
+                                   class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] text-sm"
+                                   placeholder="ejemplo@correo.com" />
+                        <ValidationMessage For="@(() => modelo.Correo)" class="text-red-500 text-xs mt-1" />
+                    </div>
+
+                    <!-- Contraseña -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                        <InputText @bind-Value="modelo.Contrasena" type="password"
+                                   class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] text-sm"
+                                   placeholder="••••••••" />
+                        <ValidationMessage For="@(() => modelo.Contrasena)" class="text-red-500 text-xs mt-1" />
+                    </div>
+
+                    <!-- Programa y Año de egreso -->
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                        <div class="sm:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Programa de egreso</label>
+                            <InputSelect @bind-Value="modelo.IdPrograma"
+                                         class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] text-sm">
+                                <option value="0">Selecciona tu programa...</option>
+                                <option value="1">Maestría en Innovación Educativa (MIED)</option>
+                            </InputSelect>
+                            <ValidationMessage For="@(() => modelo.IdPrograma)" class="text-red-500 text-xs mt-1" />
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                                Año de egreso <span class="text-xs text-gray-400 font-normal">(Opcional)</span>
+                            </label>
+                            <InputNumber @bind-Value="modelo.AnoEgreso"
+                                         class="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] text-sm"
+                                         placeholder="Ej. 2024" />
+                            <ValidationMessage For="@(() => modelo.AnoEgreso)" class="text-red-500 text-xs mt-1" />
+                        </div>
+                    </div>
+
+                    <!-- Aviso de Privacidad -->
+                    <div class="pt-2">
+                        <div class="flex items-start">
+                            <div class="flex items-center h-5">
+                                <InputCheckbox @bind-Value="modelo.AceptarPrivacidad"
+                                               class="h-4 w-4 text-[#003366] focus:ring-[#003366] border-gray-300 rounded cursor-pointer" />
+                            </div>
+                            <div class="ml-2 text-sm">
+                                <label class="text-gray-700 cursor-pointer">
+                                    He leído y acepto el <a href="#" class="font-medium text-[#003366] hover:underline">Aviso de Privacidad</a>.
+                                </label>
+                            </div>
+                        </div>
+                        <ValidationMessage For="@(() => modelo.AceptarPrivacidad)" class="text-red-500 text-xs mt-1" />
+                    </div>
+
+                    <!-- Botón de Envío con color sólido estático -->
+                    <div class="pt-4">
+                        <button type="submit"
+                                class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow text-sm font-medium text-white bg-[#003366] hover:bg-[#002244] transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366]">
+                            Enviar solicitud de registro
+                        </button>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</main>
+
+@code {
+    private RegistroEgresadoDto modelo = new RegistroEgresadoDto();
+
+    private void ProcesarRegistro()
+    {
+        Console.WriteLine($"Formulario listo para guardar: {modelo.Correo}");
+    }
+}
