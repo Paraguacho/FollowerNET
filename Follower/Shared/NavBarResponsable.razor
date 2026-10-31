@@ -1,0 +1,40 @@
+﻿<header class="bg-white border-b border-gray-200">
+    <div class="px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+
+            <!-- Logotipo y Menú Principal -->
+            <div class="flex items-center space-x-8">
+                <span class="text-xl font-bold tracking-tight text-[#003366]">EGRESADOS ITSON</span>
+                <nav class="hidden md:flex space-x-8 h-16">
+                    <a href="/responsable/egresados"
+                       class="inline-flex items-center text-sm font-medium text-gray-500 hover:text-gray-900 border-b-2 border-transparent">
+                        Gestión de egresados
+                    </a>
+
+                    <a href="/responsable/solicitudes"
+                       class="inline-flex items-center text-sm font-medium @(MenuActivo == "Solicitudes" ? "text-[#003366] border-b-2 border-[#003366]" : "text-gray-500 hover:text-gray-900 border-b-2 border-transparent")">
+                        Solicitudes de ingreso
+                    </a>
+
+                    <a href="/responsable/encuestas"
+                       class="inline-flex items-center text-sm font-medium @(MenuActivo == "Encuestas" ? "text-[#003366] border-b-2 border-[#003366]" : "text-gray-500 hover:text-gray-900 border-b-2 border-transparent")">
+                        Encuestas
+                    </a>
+                </nav>
+            </div>
+
+            <!-- Perfil del Responsable HARDCODEADO, MODIFICAR NOMBRE-->
+            <div class="flex items-center space-x-3">
+                <span class="text-sm text-gray-500">Responsable de programa educativo</span>
+                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-[#003366] font-bold text-xs">
+                    RP
+                </div>
+            </div>
+        </div>
+    </div>
+</header>
+
+@code {
+    [Parameter]
+    public string MenuActivo { get; set; } = "Egresados"; // Egresados / Solicitudes / Encuestas
+}

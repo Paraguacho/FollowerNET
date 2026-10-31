@@ -7,7 +7,7 @@ namespace Follower.Models
     public class Egresado
     {
         [Key]
-        public int IdEgresados { get; set; }
+        public int IdEgresado { get; set; }
         [Required]
         public int IdUsuario { get; set; }
 

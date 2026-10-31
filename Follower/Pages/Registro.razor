@@ -28,6 +28,9 @@ else
 
 {
     <main class="min-h-[calc(100vh-4rem)] bg-gray-50 flex flex-col justify-center py-10 sm:px-6 lg:px-8">
+
+        
+
         @if (!string.IsNullOrEmpty(mensajeError))
         {
             <div class="sm:mx-auto sm:w-full sm:max-w-md mb-4">
@@ -42,6 +45,11 @@ else
         }
         <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-xl">
             <div class="bg-white py-8 px-6 shadow-sm rounded-xl border border-gray-200 sm:px-10">
+                <!-- Títulos -->
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900">Registro de Egresado</h2>
+                    <p class="mt-2 text-sm text-gray-600">Ingresa tus datos para solicitar el acceso a la plataforma..</p>
+                </div>
 
                 <EditForm Model="@modelo" OnValidSubmit="ProcesarRegistro">
                     <DataAnnotationsValidator />
@@ -192,7 +200,7 @@ else
                         IdUsuario = nuevoUsuario.IdUsuario,
                         IdPrograma = modelo.IdPrograma,
                         Nombres = modelo.Nombres,
-                        ApellidoPaterno = modelo.ApellidoMaterno,
+                        ApellidoPaterno = modelo.ApellidoPaterno,
                         ApellidoMaterno = modelo.ApellidoMaterno,
                         FechaEgreso = modelo.AnoEgreso,
                         EstadoSolicitud = "Pendiente",

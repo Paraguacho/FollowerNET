@@ -1,0 +1,137 @@
+﻿@page "/login"
+@inject Follower.Data.ApplicationDbContext DbContext
+@inject NavigationManager NavManager
+@using Microsoft.EntityFrameworkCore
+
+<div class="min-h-screen bg-gray-50 flex-column flex-col">
+    <header class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <span class="text-xl font-bold tracking-tight text-[#003366]">EGRESADOS ITSON</span>
+
+                <a href="/" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
+                    &larr; Volver al inicio
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div class="sm:mx-auto sm:w-full sm:max-w-[28rem]">
+            <div class="bg-white py-10 px-8 shadow-sm rounded-2xl border border-gray-200">
+
+                <!-- Títulos -->
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-gray-900">Iniciar sesión</h2>
+                    <p class="mt-2 text-sm text-gray-600">Ingresa tus credenciales para acceder a tu cuenta.</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(mensajeError))
+                {
+                    <div class="mb-6 bg-red-50 border-l-4 border-red-500 p-4">
+                        <div class="flex">
+                            <div class="ml-3">
+                                <p class="text-sm text-red-700">
+                                    @mensajeError
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                }
+                <EditForm Model="@modelo" OnValidSubmit="ProcesarLogin">
+                    <DataAnnotationsValidator />
+
+                    <div class="space-y-5">
+                        <!-- Correo electrónico -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico personal</label>
+                            <InputText @bind-Value="modelo.Correo"
+                                       class="@($"block w-full px-4 py-2.5 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] sm:text-sm transition-colors {(!string.IsNullOrEmpty(mensajeError) ? "border-red-300" : "border-gray-300")}")"
+                                       placeholder="juan.perez@ejemplo.com" />
+                            <ValidationMessage For="@(() => modelo.Correo)" class="text-red-500 text-xs mt-1" />
+                        </div>
+
+                        <!-- Contraseña -->
+                        <div>
+                            <div class="flex items-center justify-between mb-1.5">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Contraseña</label>
+                                <a href="#" class="text-sm font-medium text-[#003366] hover:underline">¿Olvidaste tu contraseña?</a>
+                            </div>
+                            <InputText @bind-Value="modelo.Contrasena" type="password"
+                                       class="@($"block w-full px-4 py-2.5 border rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#003366] focus:border-[#003366] sm:text-sm transition-colors {(!string.IsNullOrEmpty(mensajeError) ? "border-red-300" : "border-gray-300")}")" />
+                            <ValidationMessage For="@(() => modelo.Contrasena)" class="text-red-500 text-xs mt-1" />
+                        </div>
+
+                        <!-- Botón Ingresar -->
+                        <div class="pt-2">
+                            <button type="submit"
+                                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#003366] hover:bg-[#002244] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] transition-colors">
+                                Ingresar a mi cuenta
+                            </button>
+                        </div>
+
+                        <!-- Pie de tarjeta -->
+                        <div class="mt-8 pt-6 border-t border-gray-100 text-center">
+                            <p class="text-sm text-gray-600">
+                                ¿Aún no tienes una cuenta?
+                                <a href="/registro" class="font-medium text-[#003366] hover:underline">Solicita tu registro aquí</a>
+                            </p>
+                        </div>
+                    </div>
+                </EditForm>
+            
+            
+            </div>
+        </div>
+     </main>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+@code {
+    private Follower.DTOs.LoginDto modelo = new Follower.DTOs.LoginDto();
+    private string? mensajeError = null;
+
+    private async Task ProcesarLogin()
+    {
+        try
+        {
+            var usuario = await DbContext.Usuarios
+                .Include(u => u.Rol)
+                .Include(u => u.Egresado)
+                .FirstOrDefaultAsync(u => u.Correo == modelo.Correo);
+
+
+
+
+
+            if (usuario == null || !BCrypt.Net.BCrypt.Verify(modelo.Contrasena,usuario.ContrasenaHash ))
+            {
+                mensajeError = "El correo electrónico o la contraseña son incorrectos. Verifica tus datos e inténtalo de nuevo.";
+                return;
+            }
+
+            if (usuario.Egresado!=null && usuario.Egresado.EstadoSolicitud == "Pendiente")
+            {
+                mensajeError = "Tu cuenta de egresado aún está en proceso de revisión. Te notificaremos por correo cuando sea aprobada.";
+                return;
+            }
+            Console.WriteLine($"usuario logueado: {usuario.Correo} con rol: {usuario.Rol.NombreRol}");
+            NavManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            mensajeError = "Error al intentar iniciar sesión. Inténtalo mas tarde.";
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+}

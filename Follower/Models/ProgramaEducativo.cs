@@ -10,6 +10,10 @@ namespace Follower.Models
         public int IdPrograma { get; set; }
 
         [Required]
+        [MaxLength(20)]
+        public string Siglas { get; set; } = string.Empty;
+
+        [Required]
         [MaxLength(150)]
         public string NombrePrograma { get; set; }  = string.Empty;
 
