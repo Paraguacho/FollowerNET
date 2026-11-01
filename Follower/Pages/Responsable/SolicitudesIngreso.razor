@@ -210,10 +210,21 @@
     </div>
 }
 
+<!-- Toast -->
+@if (!string.IsNullOrEmpty(mensajeNotificacion))
+{
+    <div class="fixed bottom-6 right-6 bg-white text-slate-800 px-5 py-3 rounded-md shadow-lg border border-slate-100 flex items-center z-50 transform transition-all duration-300">
+        <svg class="w-5 h-5 mr-3 text-[#03126B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="text-sm font-normal tracking-wide">@mensajeNotificacion</span>
+    </div>
+}
+
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> AuthStateTask { get; set; }
-
+    private string mensajeNotificacion = "";
     private Egresado? egresadoSeleccionado;
     private List<Egresado> pendientes = new();
     private ProgramaEducativo? programaActual;
@@ -223,6 +234,14 @@
 
 
 
+    private async Task MostrarNotificacion (string mensaje)
+    {
+        mensajeNotificacion = mensaje;
+        StateHasChanged();
+        await Task.Delay (3000);
+        mensajeNotificacion = "";
+        StateHasChanged();
+    }
 
     private async Task <int> ObtenerIdResponsableActual()
     {
@@ -297,8 +316,11 @@
                     egresadoActualizar.IdUsuarioResolvio = idResponsable;
                     egresadoActualizar.FechaResolucion = DateTime.Now;
                     await DbContext.SaveChangesAsync();
+
                     egresadoSeleccionado = null;
                     await CargarSolicitudes();
+                    _ = MostrarNotificacion("El acceso ha sido autorizado correctamente.");
+
                 }
                
             }
@@ -354,6 +376,8 @@
             egresadoSeleccionado = null;
             mostrarModalRechazo = false;
             await CargarSolicitudes();
+            _ = MostrarNotificacion("La solicitud fue denegada exitosamente.");
+
         }
         catch (Exception ex)
         {
