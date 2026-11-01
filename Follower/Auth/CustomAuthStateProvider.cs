@@ -6,33 +6,35 @@ namespace Follower.Auth
 {
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
-        private readonly ProtectedSessionStorage _sessionStorage;
+        private readonly ProtectedLocalStorage _localstorage;
+
         private ClaimsPrincipal _anonymous = new ClaimsPrincipal(new ClaimsIdentity());
 
-        public CustomAuthStateProvider (ProtectedSessionStorage sessionStorage)
+        public CustomAuthStateProvider (ProtectedLocalStorage localStorage)
         {
-            _sessionStorage = sessionStorage;
+            _localstorage = localStorage;
         }
 
         public override async Task <AuthenticationState> GetAuthenticationStateAsync()
         {
             try
             {
-                var userSession = await _sessionStorage.GetAsync<string>("userId");
-                var userRole = await _sessionStorage.GetAsync<string>("userRole");
+                var userSession = await _localstorage.GetAsync<string>("userId");
+                var userRole = await _localstorage.GetAsync<string>("userRole");
 
-                if (userSession.Success && !string.IsNullOrEmpty(userSession.Value))
+                if (userSession.Success && !string.IsNullOrEmpty(userSession.Value) &&  userRole.Success && !string.IsNullOrEmpty(userRole.Value))
                 {
                     var claims = new List<Claim>
                     {
                         new Claim (ClaimTypes.NameIdentifier,userSession.Value),
-                        new Claim(ClaimTypes.Role, userRole.Success && userRole.Value != null ? userRole.Value : "")
-                    };
+                        new Claim(ClaimTypes.Role, userRole.Value)
 
+                    };
                     var identity = new ClaimsIdentity(claims, "BlazorAuth");
-                    var principal = new ClaimsPrincipal(identity);
-                    return new AuthenticationState(principal);
+                    return new AuthenticationState(new ClaimsPrincipal(identity));
+
                 }
+
 
 
             }
@@ -46,8 +48,8 @@ namespace Follower.Auth
 
         public async Task IniciarSesion(string idUsuario, string rol)
         {
-            await _sessionStorage.SetAsync("userId", idUsuario);
-            await _sessionStorage.SetAsync("userRole", rol);
+            await _localstorage.SetAsync("userId", idUsuario);
+            await _localstorage.SetAsync("userRole", rol);
 
             var claims = new List<Claim>
             {
@@ -57,13 +59,13 @@ namespace Follower.Auth
             var identity = new ClaimsIdentity(claims, "BlazorAuth");
             var principal = new ClaimsPrincipal(identity);
 
-            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(principal)));
+            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(new ClaimsPrincipal(identity))));
         }
 
         public async Task CerrarSesion()
         {
-            await _sessionStorage.DeleteAsync("userId");
-            await _sessionStorage.DeleteAsync("userRole");
+            await _localstorage.DeleteAsync("userId");
+            await _localstorage.DeleteAsync("userRole");
             NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_anonymous)));
         }
     }

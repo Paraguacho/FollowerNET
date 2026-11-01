@@ -224,35 +224,38 @@
 
 
 
-
-
-    protected override async Task OnInitializedAsync()
+    private async Task <int> ObtenerIdResponsableActual()
     {
         var authState = await AuthStateTask;
-        var user = authState.User; 
-
+        var user = authState.User;
         if (user.Identity != null && user.Identity.IsAuthenticated)
         {
             var idString = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (int.TryParse(idString, out int idUsuarioLogueado))
+            if (int.TryParse(idString, out int idUsuario))
             {
-                int  idResponsableLogueado = idUsuarioLogueado;
-                var asignacion = await DbContext.ProgramasResponsables
-                   .Include(pr => pr.ProgramaEducativo)
-                   .FirstOrDefaultAsync(pr => pr.IdUsuario == idUsuarioLogueado);
-
-                if (asignacion != null)
-                {
-                    programaActual = asignacion.ProgramaEducativo;
-                    await CargarSolicitudes();
-                }
-
+                return idUsuario;
             }
         }
-
-
-
+        return 0; //invalida
     }
+
+    protected override async Task OnInitializedAsync()
+    {
+        int idResponsable = await ObtenerIdResponsableActual();
+        if (idResponsable >0 )
+        {
+            var asignacion = await DbContext.ProgramasResponsables
+                   .Include(pr => pr.ProgramaEducativo)
+                   .FirstOrDefaultAsync(pr => pr.IdUsuario == idResponsable);
+            if (asignacion != null)
+            {
+                programaActual = asignacion.ProgramaEducativo;
+                await CargarSolicitudes();
+            }
+
+        }
+    }
+
     private async Task CargarSolicitudes()
     {
         if (programaActual == null) return;
@@ -279,14 +282,39 @@
 
     private async Task AutorizarAcceso()
     {
-        if (egresadoSeleccionado != null && idResponsableLogueado > 0)
+        int idResponsable = await ObtenerIdResponsableActual();
+
+        if (egresadoSeleccionado != null && idResponsable > 0)
         {
-            egresadoSeleccionado.EstadoSolicitud = "Aprobado";
-            egresadoSeleccionado.IdUsuarioResolvio = idResponsableLogueado;
-            egresadoSeleccionado.FechaResolucion = DateTime.Now;
-            await DbContext.SaveChangesAsync();
-            egresadoSeleccionado = null;
-            await CargarSolicitudes();
+            try
+            {
+                DbContext.ChangeTracker.Clear(); 
+
+                var egresadoActualizar = await DbContext.Egresados.FindAsync(egresadoSeleccionado.IdEgresado);
+                if (egresadoActualizar != null)
+                {
+                    egresadoActualizar.EstadoSolicitud = "Aprobado";
+                    egresadoActualizar.IdUsuarioResolvio = idResponsable;
+                    egresadoActualizar.FechaResolucion = DateTime.Now;
+                    await DbContext.SaveChangesAsync();
+                    egresadoSeleccionado = null;
+                    await CargarSolicitudes();
+                }
+               
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error de Base Datos al Autorizar: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"DETALLE MYSQL: {ex.InnerException.Message}\n");
+                }
+            }
+
+        }
+        else
+        {
+            Console.WriteLine("Validación fallida: El egresado es null o el idResponsable es 0.");
         }
     }
 
@@ -305,33 +333,35 @@
 
     private async Task ConfirmarRechazo()
     {
-        if (egresadoSeleccionado != null && idResponsableLogueado > 0)
+        int idResponsable = await ObtenerIdResponsableActual();
+        if (egresadoSeleccionado == null)
         {
-            try
-            {
-                egresadoSeleccionado.EstadoSolicitud = "Rechazado";
-                egresadoSeleccionado.IdUsuarioResolvio = idResponsableLogueado;
-                egresadoSeleccionado.FechaResolucion = DateTime.Now;
-                egresadoSeleccionado.MotivoRechazo = string.IsNullOrEmpty(motivoRechazoSeleccionado) ? null : motivoRechazoSeleccionado;
-                await DbContext.SaveChangesAsync();
-
-                egresadoSeleccionado = null;
-                mostrarModalRechazo = false;
-                await CargarSolicitudes();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"ERROR FATAL AL GUARDAR: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"DETALLE TÉCNICO (MySQL): {ex.InnerException.Message}");
-                }
-            }
-
+            Console.WriteLine("Se perdio el egresado");
         }
-        else
+        if (idResponsable == 0)
         {
-            Console.WriteLine("Validación fallida: Faltan datos del egresado o la sesión del responsable expiró (ID 0).");
+            Console.WriteLine("Sesion expiro o el localstorage fallo");
+            return;
+        }
+        try
+        {
+            egresadoSeleccionado.EstadoSolicitud = "Rechazado";
+            egresadoSeleccionado.IdUsuarioResolvio = idResponsable;
+            egresadoSeleccionado.FechaResolucion = DateTime.Now;
+            egresadoSeleccionado.MotivoRechazo = string.IsNullOrEmpty(motivoRechazoSeleccionado) ? null : motivoRechazoSeleccionado;
+            await DbContext.SaveChangesAsync();
+
+            egresadoSeleccionado = null;
+            mostrarModalRechazo = false;
+            await CargarSolicitudes();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR BD GUARDAR: {ex.Message}");
+
         }
     }
+        
+
+
 }
