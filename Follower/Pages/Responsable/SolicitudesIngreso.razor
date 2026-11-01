@@ -2,6 +2,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Follower.Models
 @inject Follower.Data.ApplicationDbContext DbContext
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="min-h-screen bg-gray-50 flex flex-col font-sans">
     <!--  Componente "Solicitudes" -->
@@ -174,6 +175,9 @@
     </div>
 </div>
 @code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; }
+
     private Egresado? egresadoSeleccionado;
     private List<Egresado> pendientes = new();
     private ProgramaEducativo? programaActual;
@@ -184,16 +188,29 @@
 
     protected override async Task OnInitializedAsync()
     {
-        int idUsuarioActual = 4;
-        var asignacion = await DbContext.ProgramasResponsables
-            .Include(pr => pr.ProgramaEducativo)
-            .FirstOrDefaultAsync(pr => pr.IdUsuario == idUsuarioActual);
+        var authState = await AuthStateTask;
+        var user = authState.User; 
 
-        if (asignacion != null)
+        if (user.Identity != null && user.Identity.IsAuthenticated)
         {
-            programaActual = asignacion.ProgramaEducativo;
-            await CargarSolicitudes();
+            var idString = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(idString, out int idUsuarioLogueado))
+            {
+                var asignacion = await DbContext.ProgramasResponsables
+                   .Include(pr => pr.ProgramaEducativo)
+                   .FirstOrDefaultAsync(pr => pr.IdUsuario == idUsuarioLogueado);
+
+                if (asignacion != null)
+                {
+                    programaActual = asignacion.ProgramaEducativo;
+                    await CargarSolicitudes();
+                }
+
+            }
         }
+
+
+      
     }
     private async Task CargarSolicitudes()
     {

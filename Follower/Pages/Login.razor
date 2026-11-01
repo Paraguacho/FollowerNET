@@ -1,6 +1,10 @@
 ﻿@page "/login"
 @inject Follower.Data.ApplicationDbContext DbContext
 @inject NavigationManager NavManager
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider authStateProvider
+@using Follower.Auth
+
 @using Microsoft.EntityFrameworkCore
 
 <div class="min-h-screen bg-gray-50 flex-column flex-col">
@@ -124,8 +128,22 @@
                 mensajeError = "Tu cuenta de egresado aún está en proceso de revisión. Te notificaremos por correo cuando sea aprobada.";
                 return;
             }
+
+
+            var customAuthStateProvider = (CustomAuthStateProvider)authStateProvider;
+            await customAuthStateProvider.IniciarSesion(usuario.IdUsuario.ToString(), usuario.Rol.NombreRol);
             Console.WriteLine($"usuario logueado: {usuario.Correo} con rol: {usuario.Rol.NombreRol}");
-            NavManager.NavigateTo("/");
+            if (usuario.Rol.NombreRol == "ResponsablePrograma")
+            {
+                NavManager.NavigateTo("/responsable/solicitudes");
+            }
+            else
+            {
+                NavManager.NavigateTo("/");
+            }
+
+           
+           
         }
         catch (Exception ex)
         {

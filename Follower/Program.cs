@@ -1,5 +1,8 @@
 using Follower.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Components.Authorization;
+using Follower.Auth;
+
 
 namespace Follower
 {
@@ -15,8 +18,10 @@ namespace Follower
 
             // Add services to the container.
             builder.Services.AddControllersWithViews();
-
             builder.Services.AddServerSideBlazor();
+            builder.Services.AddAuthorizationCore();
+            builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+
 
             var app = builder.Build();
 
