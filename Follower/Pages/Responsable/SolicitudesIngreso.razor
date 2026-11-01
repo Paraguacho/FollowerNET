@@ -1,8 +1,11 @@
 ﻿@page "/responsable/solicitudes"
+@attribute [Authorize(Roles= "ResponsablePrograma")]
 @using Microsoft.EntityFrameworkCore
 @using Follower.Models
 @inject Follower.Data.ApplicationDbContext DbContext
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Authorization
+
 
 <div class="min-h-screen bg-gray-50 flex flex-col font-sans">
     <!--  Componente "Solicitudes" -->
@@ -79,7 +82,8 @@
                                             @egresado.FechaSolicitud?.ToString("dd MMM yyyy, HH:mm") hrs
                                         </p>
                                     </div>
-                                    @if (isSelected)
+
+                                    @if ((DateTime.Now - egresado.FechaSolicitud)?.TotalHours <= 24)
                                     {
                                         <span class="bg-yellow-100 text-yellow-800 text-[10px] px-2 py-0.5 rounded font-medium">Nuevo</span>
                                     }
@@ -174,6 +178,38 @@
         </div>
     </div>
 </div>
+
+@if (mostrarModalRechazo)
+{
+    <div class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50 transition-opacity">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full shadow-xl">
+            <div class="flex items-center justify-center w-12 h-12 mx-auto bg-red-100 rounded-full mb-4">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+
+            <h3 class="text-lg font-bold text-center text-gray-900 mb-2">Confirmar denegación</h3>
+            <p class="text-sm text-center text-gray-500 mb-6">¿Estás seguro de que deseas denegar el acceso a <strong>@egresadoSeleccionado?.Nombres</strong>? Esta acción no se puede deshacer.</p>
+
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Motivo interno del rechazo (Opcional)</label>
+                <select @bind="motivoRechazoSeleccionado" class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#003366] focus:border-[#003366] sm:text-sm">
+                    <option value="">Selecciona un motivo...</option>
+                    <option value="No se encontró en los registros institucionales (SAETI)">No se encontró en los registros institucionales (SAETI)</option>
+                    <option value="El año de egreso no coincide con el programa">El año de egreso no coincide con el programa</option>
+                    <option value="Datos incompletos o presuntamente falsos">Datos incompletos o presuntamente falsos</option>
+                    <option value="Solicitud duplicada">Solicitud duplicada</option>
+                </select>
+                <p class="text-xs text-gray-400 mt-1">Este motivo se guardará para auditoría y se adjuntará al correo de notificación.</p>
+            </div>
+
+            <div class="flex justify-end space-x-3">
+                <button @onclick="CerrarModalRechazo" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors">Cancelar</button>
+                <button @onclick="ConfirmarRechazo" class="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors">Denegar acceso</button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [CascadingParameter]
     private Task<AuthenticationState> AuthStateTask { get; set; }
@@ -181,6 +217,10 @@
     private Egresado? egresadoSeleccionado;
     private List<Egresado> pendientes = new();
     private ProgramaEducativo? programaActual;
+    private int idResponsableLogueado;
+    private bool mostrarModalRechazo = false;
+    private string motivoRechazoSeleccionado = "";
+
 
 
 
@@ -196,6 +236,7 @@
             var idString = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(idString, out int idUsuarioLogueado))
             {
+                int  idResponsableLogueado = idUsuarioLogueado;
                 var asignacion = await DbContext.ProgramasResponsables
                    .Include(pr => pr.ProgramaEducativo)
                    .FirstOrDefaultAsync(pr => pr.IdUsuario == idUsuarioLogueado);
@@ -210,7 +251,7 @@
         }
 
 
-      
+
     }
     private async Task CargarSolicitudes()
     {
@@ -238,10 +279,11 @@
 
     private async Task AutorizarAcceso()
     {
-        if (egresadoSeleccionado != null)
+        if (egresadoSeleccionado != null && idResponsableLogueado > 0)
         {
             egresadoSeleccionado.EstadoSolicitud = "Aprobado";
-            //egresadoSeleccionado.IdUsuarioResolvio = usuarioActual.IdUsuario;
+            egresadoSeleccionado.IdUsuarioResolvio = idResponsableLogueado;
+            egresadoSeleccionado.FechaResolucion = DateTime.Now;
             await DbContext.SaveChangesAsync();
             egresadoSeleccionado = null;
             await CargarSolicitudes();
@@ -250,12 +292,46 @@
 
     private async Task DenegarAcceso()
     {
-        if (egresadoSeleccionado != null)
+        motivoRechazoSeleccionado = "";
+        mostrarModalRechazo = true;
+
+
+    }
+
+    private void CerrarModalRechazo()
+    {
+        mostrarModalRechazo = false;
+    }
+
+    private async Task ConfirmarRechazo()
+    {
+        if (egresadoSeleccionado != null && idResponsableLogueado > 0)
         {
-            egresadoSeleccionado.EstadoSolicitud = "Rechazado";
-            await DbContext.SaveChangesAsync();
-            egresadoSeleccionado = null;
-            await CargarSolicitudes();
+            try
+            {
+                egresadoSeleccionado.EstadoSolicitud = "Rechazado";
+                egresadoSeleccionado.IdUsuarioResolvio = idResponsableLogueado;
+                egresadoSeleccionado.FechaResolucion = DateTime.Now;
+                egresadoSeleccionado.MotivoRechazo = string.IsNullOrEmpty(motivoRechazoSeleccionado) ? null : motivoRechazoSeleccionado;
+                await DbContext.SaveChangesAsync();
+
+                egresadoSeleccionado = null;
+                mostrarModalRechazo = false;
+                await CargarSolicitudes();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ERROR FATAL AL GUARDAR: {ex.Message}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"DETALLE TÉCNICO (MySQL): {ex.InnerException.Message}");
+                }
+            }
+
+        }
+        else
+        {
+            Console.WriteLine("Validación fallida: Faltan datos del egresado o la sesión del responsable expiró (ID 0).");
         }
     }
 }

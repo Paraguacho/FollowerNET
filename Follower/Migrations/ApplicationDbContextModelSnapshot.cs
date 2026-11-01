@@ -58,11 +58,11 @@ namespace Follower.Migrations
 
             modelBuilder.Entity("Follower.Models.Egresado", b =>
                 {
-                    b.Property<int>("IdEgresados")
+                    b.Property<int>("IdEgresado")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdEgresados"));
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdEgresado"));
 
                     b.Property<string>("ApellidoMaterno")
                         .IsRequired()
@@ -93,8 +93,8 @@ namespace Follower.Migrations
                     b.Property<DateTime>("FechaAceptacionPrivacidad")
                         .HasColumnType("datetime(6)");
 
-                    b.Property<DateTime?>("FechaEgreso")
-                        .HasColumnType("datetime(6)");
+                    b.Property<int?>("FechaEgreso")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("FechaNacimiento")
                         .HasColumnType("datetime(6)");
@@ -121,6 +121,9 @@ namespace Follower.Migrations
                     b.Property<int?>("IdUsuarioResolvio")
                         .HasColumnType("int");
 
+                    b.Property<string>("MotivoRechazo")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Nombres")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -139,7 +142,7 @@ namespace Follower.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
-                    b.HasKey("IdEgresados");
+                    b.HasKey("IdEgresado");
 
                     b.HasIndex("IdPrograma");
 
@@ -189,6 +192,11 @@ namespace Follower.Migrations
                         .IsRequired()
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)");
+
+                    b.Property<string>("Siglas")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.HasKey("IdPrograma");
 

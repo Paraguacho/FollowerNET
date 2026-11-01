@@ -71,6 +71,8 @@ namespace Follower.Models
 
         [ForeignKey(nameof(IdUsuarioResolvio))]
         public Usuario? UsuarioResolvio { get; set; }
+
+        public string? MotivoRechazo { get; set; }
         public DateTime FechaUltimaActualizacion { get; set; } = DateTime.UtcNow;
 
         public ICollection<ValorCampoEgresado> ValoresCamposPersonalizados { get; set; } = new List<ValorCampoEgresado>();

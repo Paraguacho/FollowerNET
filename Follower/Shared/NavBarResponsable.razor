@@ -1,4 +1,10 @@
-﻿<header class="bg-white border-b border-gray-200">
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager NavManager
+
+
+
+<header class="bg-white border-b border-gray-200">
     <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16 items-center">
 
@@ -24,12 +30,24 @@
             </div>
 
             <!-- Perfil del Responsable HARDCODEADO, MODIFICAR NOMBRE-->
-            <div class="flex items-center space-x-3">
-                <span class="text-sm text-gray-500">Responsable de programa educativo</span>
-                <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-[#003366] font-bold text-xs">
-                    RP
+            <div class="flex items-center space-x-5">
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm text-gray-500">Responsable de programa educativo</span>
+                    <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-[#003366] font-bold text-xs">
+                        RP
+                    </div>
                 </div>
+
+                <div class="h-6 w-px bg-gray-300"></div>
+
+                <!-- Cerrar sesion -->
+                <button @onclick="CerrarSesion" class="text-gray-400 hover:text-red-600 transition-colors" title="Cerrar sesión">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                    </svg>
+                </button>
             </div>
+
         </div>
     </div>
 </header>
@@ -37,4 +55,12 @@
 @code {
     [Parameter]
     public string MenuActivo { get; set; } = "Egresados"; // Egresados / Solicitudes / Encuestas
+
+    private async Task CerrarSesion()
+    {
+        var customAuth = (Follower.Auth.CustomAuthStateProvider)authStateProvider;
+        await customAuth.CerrarSesion();
+
+        NavManager.NavigateTo("/login", forceLoad: true);
+    }
 }
