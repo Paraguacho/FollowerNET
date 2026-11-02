@@ -1,0 +1,23 @@
+﻿@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="page">
+    <AuthorizeView Roles="ResponsablePrograma">
+        <Authorized>
+            <NavBarResponsable/>
+        </Authorized>
+        <NotAuthorized>
+            <NavBar/>
+        </NotAuthorized>
+    </AuthorizeView>
+
+    <main>
+        <article class="content">
+            @Body
+        </article>
+    </main>
+</div>
+
+@code {
+
+}

@@ -76,7 +76,7 @@ namespace Follower.Auth
             await _localStorage.DeleteAsync("userId");
             await _localStorage.DeleteAsync("userRole");
             await _localStorage.DeleteAsync("loginTimestamp");
-            NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_anonymous)));
+            //NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_anonymous)));
         }
     }
 }
