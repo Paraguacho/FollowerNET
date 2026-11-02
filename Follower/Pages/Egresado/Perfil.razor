@@ -1,0 +1,81 @@
+﻿@page "/perfil"
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@using Follower.Pages.Egresado.SeccionesPerfil
+
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
+        <!-- Panel izquierod -->
+        <div class="w-full md:w-1/4 flex flex-col space-y-6">
+            <div>
+                <h3 class="text-xs font-bold text-gray-400 tracking-wider mb-4 uppercase">Gestión de Perfil</h3>
+                <nav class="flex flex-col space-y-1">
+                    <button @onclick='() => seccionActiva = "InformacionGeneral"' class="@ObtenerClaseMenu("InformacionGeneral")">
+                        Información General
+                    </button>
+                    <button @onclick='() => seccionActiva = "Trayectoria"' class="@ObtenerClaseMenu("Trayectoria")">
+                        Trayectoria
+                    </button>
+                    <button @onclick='() => seccionActiva = "Productividad"' class="@ObtenerClaseMenu("Productividad")">
+                        Productividad y Reconocimientos
+                    </button>
+                    <button @onclick='() => seccionActiva = "Evidencias"' class="@ObtenerClaseMenu("Evidencias")">
+                        Evidencias y Documentos
+                    </button>
+                    <!-- Sección Exclusiva MIED -->
+                    @if (esUsuarioMIED)
+                    {
+                        <button @onclick='() => seccionActiva = "VinculacionMIED"' class="@ObtenerClaseMenu("VinculacionMIED") justify-between">
+                            <span>Vinculación MIED</span>
+                            <span class="bg-blue-100 text-[#003366] text-[10px] font-bold px-2 py-0.5 rounded uppercase">Exclusivo</span>
+                        </button>
+                    }
+
+                    <button @onclick='() => seccionActiva = "Configuracion"' class="@ObtenerClaseMenu("Configuracion")">
+                        Configuración de cuenta
+                    </button>
+                </nav>
+            </div>
+
+            <!-- Boton Descargar -->
+            <div class="pt-4 border-t border-gray-200">
+                <button class="w-full flex items-center justify-center space-x-2 py-2.5 border-2 border-[#003366] text-[#003366] font-semibold rounded-md hover:bg-gray-50 transition-colors">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Descargar mi CV (PDF)</span>
+                </button>
+                <p class="text-xs text-gray-500 text-center mt-2">Genera un documento con toda tu información registrada.</p>
+            </div>
+        </div>
+
+
+        <!-- Panel derecho -->
+        <div class="modal-fullscreen-lg-down md:w-3/4">
+            @if(seccionActiva == "InformacionGeneral")
+            {
+                <InformacionGeneral/>
+            }
+            else if (seccionActiva == "Trayectoria")
+            {
+                <div class="bg-white p-6 rounded-xl border border-gray-200 min-h-[400px] flex items-center justify-center">
+                    <p class="text-gray-500">Componente de Trayectoria en construcción...</p>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string seccionActiva = "InformacionGeneral";
+    private bool esUsuarioMIED = true;
+
+    private string ObtenerClaseMenu(string seccion)
+    {
+        string clasesBase = "w-full text-left px-4 py-2.5 text-sm font-medium rounded-r-md border-l-4 flex items-center transition-colors ";
+        if(seccionActiva == seccion)
+        {
+            return clasesBase + "border-[#003366] bg-blue-50 text-[#003366]";
+        }
+        return clasesBase + "border-transparent text-gray-600 hover:bg-gray-100 hover:text-gray-900";
+    }
+}

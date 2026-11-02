@@ -12,10 +12,12 @@
         <Authorized>
 
             <div class="hidden md:flex space-x-8">
-                <a href="/" class="text-[#003366] font-medium border-b-2 border-[#003366] pb-4 -mb-4">Tablero de empleos</a>
-                <a href="/perfil" class="text-gray-500 hover:text-gray-900 font-medium pb-4 -mb-4 transition-colors">Gestión de mi perfil</a>
+                <a href="/" class="@ObtenerClaseActiva("/")">Tablero de empleos</a>
+
+                <a href="/perfil" class="@ObtenerClaseActiva("/perfil")">Gestión mi perfil</a>
+
                 <div class="relative flex items-center pb-4 -mb-4">
-                    <a href="/encuestas" class="text-gray-500 hover:text-gray-900 font-medium transition-colors">Encuestas</a>
+                    <a href="/encuestas" class="@ObtenerClaseActiva("/encuestas")">Encuestas</a>
                     <span class="absolute top-0 right-[-12px] flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">3</span>
                 </div>
             </div>
@@ -48,6 +50,33 @@
 
 
 @code{
+    [Parameter]
+    public string MenuActivo { get; set; } = "/"; // /index / /perfil / encuestas
+
+    private string ObtenerClaseActiva(string ruta)
+    {
+        var rutaActual = new Uri(NavManager.Uri).AbsolutePath;
+        bool esActiva = rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase);
+        return esActiva
+            ? "text-[#003366] font-medium border-b-2 border-[#003366] pb-4 -mb-4" // Clases activas 
+            : "text-gray-500 hover:text-gray-900 font-medium pb-4 -mb-4 transition-colors"; // Clases inactivas
+    }
+
+    protected override void OnInitialized()
+    {
+        NavManager.LocationChanged += LocationChanged;
+    }
+
+    private void LocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        NavManager.LocationChanged -= LocationChanged;
+    }
+
 
     private async Task CerrarSesion()
     {
