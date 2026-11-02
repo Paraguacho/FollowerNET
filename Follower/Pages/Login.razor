@@ -1,4 +1,6 @@
 ﻿@page "/login"
+@layout MainLayout
+
 @inject Follower.Data.ApplicationDbContext DbContext
 @inject NavigationManager NavManager
 @using Microsoft.AspNetCore.Components.Authorization
@@ -8,18 +10,6 @@
 @using Microsoft.EntityFrameworkCore
 
 <div class="min-h-screen bg-gray-50 flex-column flex-col">
-    <header class="bg-white border-b border-gray-200">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <span class="text-xl font-bold tracking-tight text-[#003366]">EGRESADOS ITSON</span>
-
-                <a href="/" class="text-sm font-medium text-gray-600 hover:text-gray-900 transition-colors">
-                    &larr; Volver al inicio
-                </a>
-            </div>
-        </div>
-    </header>
-
     <main class="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-[28rem]">
             <div class="bg-white py-10 px-8 shadow-sm rounded-2xl border border-gray-200">

@@ -7,22 +7,22 @@ namespace Follower.Auth
 {
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
-        private readonly ProtectedLocalStorage _localStorage;
+        private readonly ProtectedSessionStorage _sessionStorage;
 
         private ClaimsPrincipal _anonymous = new ClaimsPrincipal(new ClaimsIdentity());
 
-        public CustomAuthStateProvider (ProtectedLocalStorage localStorage)
+        public CustomAuthStateProvider (ProtectedSessionStorage sessionStorage)
         {
-            _localStorage = localStorage;
+            _sessionStorage = sessionStorage;
         }
 
         public override async Task <AuthenticationState> GetAuthenticationStateAsync()
         {
             try
             {
-                var userSession = await _localStorage.GetAsync<string>("userId");
-                var userRole = await _localStorage.GetAsync<string>("userRole");
-                var timestamp = await _localStorage.GetAsync<string>("loginTimestamp");
+                var userSession = await _sessionStorage.GetAsync<string>("userId");
+                var userRole = await _sessionStorage.GetAsync<string>("userRole");
+                var timestamp = await _sessionStorage.GetAsync<string>("loginTimestamp");
 
                 if (userSession.Success && !string.IsNullOrEmpty(userSession.Value) && userRole.Success && !string.IsNullOrEmpty(userRole.Value)
                     && timestamp.Success && !string.IsNullOrEmpty(timestamp.Value))
@@ -58,9 +58,9 @@ namespace Follower.Auth
 
         public async Task IniciarSesion(string idUsuario, string rol)
         {
-            await _localStorage.SetAsync("userId", idUsuario);
-            await _localStorage.SetAsync("userRole", rol);
-            await _localStorage.SetAsync("loginTimestamp", DateTime.Now.ToString("O"));
+            await _sessionStorage.SetAsync("userId", idUsuario);
+            await _sessionStorage.SetAsync("userRole", rol);
+            await _sessionStorage.SetAsync("loginTimestamp", DateTime.Now.ToString("O"));
 
             var claims = new List<Claim>
             {
@@ -73,9 +73,9 @@ namespace Follower.Auth
 
         public async Task CerrarSesion()
         {
-            await _localStorage.DeleteAsync("userId");
-            await _localStorage.DeleteAsync("userRole");
-            await _localStorage.DeleteAsync("loginTimestamp");
+            await _sessionStorage.DeleteAsync("userId");
+            await _sessionStorage.DeleteAsync("userRole");
+            await _sessionStorage.DeleteAsync("loginTimestamp");
             //NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_anonymous)));
         }
     }

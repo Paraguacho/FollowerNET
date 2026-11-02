@@ -3,7 +3,7 @@
 <CascadingAuthenticationState>
     <Router AppAssembly="@typeof(App).Assembly">
         <Found Context="routeData">
-            <AuthorizeRouteView RouteData="@routeData">
+            <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
                 <NotAuthorized>
                     <div class="min-h-screen flex flex-col items-center justify-center bg-gray-50">
                         <h1 class="text-3xl font-bold text-gray-900 mb-2">Acceso Denegado</h1>
@@ -15,12 +15,15 @@
             </AuthorizeRouteView>
         </Found>
         <NotFound>
-            <div class="text-center mt-10">
-                <h1 class="text-2xl font-bold">Página no encontrada</h1>
-            </div>
+            <LayoutView Layout="@typeof(MainLayout)">
+                <div class="text-center mt-10">
+                  <h1 class="text-2xl font-bold">Página no encontrada</h1>
+                </div>
+            </LayoutView>
         </NotFound>
     </Router>
 </CascadingAuthenticationState>
+
 @code {
 
 }

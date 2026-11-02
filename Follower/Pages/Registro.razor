@@ -1,9 +1,9 @@
 ﻿@page "/registro"
 @using Microsoft.EntityFrameworkCore;
+@layout MainLayout
 @inject Follower.Data.ApplicationDbContext DbContext
 
 <!-- Barra superior -->
-<Follower.Shared.NavBar />
 
 @if (registroExitoso)
 {
