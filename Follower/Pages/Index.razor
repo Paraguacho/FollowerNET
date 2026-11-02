@@ -1,0 +1,46 @@
+﻿@page "/"
+@inject NavigationManager NavManager 
+@using Microsoft.AspNetCore.Components.Authorization
+
+<div class="min-h-screen bg-gray-50 p-8">
+    <div class="max-w-6xl mx-auto bg-white rounded-2xl shadow-sm border border-gray-200 p-10">
+    
+    <!-- Encabezado -->
+    <div class="mb-10">
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Oportunidades Laborales y Proyectos</h1>
+        <p class="text-gray-500 text-lg">Explora las ofertas publicadas por la comunidad de egresados.</p>
+    </div>
+
+    <!-- Tarjetas de trabajos-->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="border border-gray-200 rounded-xl p-6 hover:shadow-md transition-shadow">
+            <div class="flex justify-between items-center mb-4">
+                <span class="bg-blue-50 text-[#003366] text-xs font-semibold px-3 py-1 rounded-md">ITSON</span>
+                <span class="text-sm text-gray-500">Juan Pérez</span>
+            </div>
+            <h2 class="text-xl font-bold text-gray-900 mb-3">Proyecto de Investigación MIED</h2>
+            <p class="text-gray-600 text-sm mb-6 line-clamp-3">
+                Se abre convocatoria para egresados que deseen participar como auxiliares en el nuevo proyecto de análisis de datos...
+            </p>
+
+            <AuthorizeView>
+                <Authorized>
+                    <button class="text-[#003366] font-medium text-sm flex items-center hover:underline">
+                        Ver más información <span class="ml-1">→</span>
+                    </button>
+                </Authorized>
+                <NotAuthorized>
+                    <button @onclick='() => NavManager.NavigateTo("/login")' class="text-[#003366] font-medium text-sm flex items-center hover:underline">
+                        Ver más información <span class="ml-1">→</span>
+                    </button>
+                </NotAuthorized>
+            </AuthorizeView>
+        </div>
+    </div>
+
+    </div>
+</div>
+
+@code {
+
+}
