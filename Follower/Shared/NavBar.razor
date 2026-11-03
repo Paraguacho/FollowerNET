@@ -24,10 +24,16 @@
 
             <!-- Perfil -->
             <div class="flex items-center space-x-4 cursor-pointer">
-                <span class="text-sm font-medium text-gray-700">@context.User.Identity?.Name</span>
+                @{
+                    var nombreCompleto = context.User.Identity?.Name ?? "Usuario";
+                    var iniciales = ObtenerIniciales(nombreCompleto);
+                }
+
+                <span class="text-sm font-medium text-gray-700">@nombreCompleto</span>
                 <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center border border-gray-300">
-                    <span class="text-gray-600 font-bold text-sm">EG</span>
+                    <span class="text-gray-600 font-bold text-sm">@iniciales</span>
                 </div>
+
                 <!-- Cerrar Sesion-->
                 <button @onclick="CerrarSesion" class="text-gray-400 hover:text-red-600 transition-colors" title="Cerrar sesión">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
@@ -75,6 +81,16 @@
     public void Dispose()
     {
         NavManager.LocationChanged -= LocationChanged;
+    }
+
+    private string ObtenerIniciales (string nombreCompleto)
+    {
+        if (string.IsNullOrWhiteSpace(nombreCompleto)) return "EG";
+
+        var partes = nombreCompleto.Trim().Split(' ',StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 1) return partes[0].Substring(0, 1).ToUpper(); // Solo tiene un nombre
+        // Toma la primera letra de la primera palabra y la primera de la segunda
+         return $"{partes[0][0]}{partes[1][0]}".ToUpper();
     }
 
 
