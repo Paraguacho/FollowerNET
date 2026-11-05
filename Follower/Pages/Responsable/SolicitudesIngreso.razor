@@ -189,13 +189,7 @@
 
             <div class="mb-6">
                 <label class="block text-sm font-medium text-gray-700 mb-2">Motivo interno del rechazo (Opcional)</label>
-                <select @bind="motivoRechazoSeleccionado" class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#003366] focus:border-[#003366] sm:text-sm">
-                    <option value="">Selecciona un motivo...</option>
-                    <option value="No se encontró en los registros institucionales (SAETI)">No se encontró en los registros institucionales (SAETI)</option>
-                    <option value="El año de egreso no coincide con el programa">El año de egreso no coincide con el programa</option>
-                    <option value="Datos incompletos o presuntamente falsos">Datos incompletos o presuntamente falsos</option>
-                    <option value="Solicitud duplicada">Solicitud duplicada</option>
-                </select>
+                <textarea @bind="motivoRechazoSeleccionado" rows="3" placeholder="Escribe el motivo del rechazo aquí..." class="block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-[#003366] focus:border-[#003366] sm:text-sm resize-none"></textarea>
                 <p class="text-xs text-gray-400 mt-1">Este motivo se guardará para auditoría y se adjuntará al correo de notificación.</p>
             </div>
 

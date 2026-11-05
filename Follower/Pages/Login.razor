@@ -108,7 +108,7 @@
 
             //!BCrypt.Net.BCrypt.Verify(modelo.Contrasena,usuario.ContrasenaHash
             if (usuario == null || usuario.ContrasenaHash != modelo.Contrasena)
-    {
+            {
                 mensajeError = "El correo electrónico o la contraseña son incorrectos. Verifica tus datos e inténtalo de nuevo.";
                 return;
             }
@@ -118,6 +118,12 @@
                 mensajeError = "Tu cuenta de egresado aún está en proceso de revisión. Te notificaremos por correo cuando sea aprobada.";
                 return;
             }
+            if (usuario.Egresado != null && usuario.Egresado.EstadoSolicitud == "Rechazado")
+            {
+                mensajeError = $"Tu intento de registro fue rechado por el motivo siguiente: {usuario.Egresado.MotivoRechazo} porfavor comunicate con tu responsable para mas información.";
+                return;
+            }
+
 
             string nombreCompleto = "Usuario";
             if (usuario.Egresado != null)
