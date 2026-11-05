@@ -186,11 +186,11 @@ else
             using var transaction = await DbContext.Database.BeginTransactionAsync();
             try
             {
-                //2 EGRESADO, 1 RP
+                //2 EGRESADO, 1 RP BCrypt.Net.BCrypt.HashPassword(modelo.Contrasena), 
                 var nuevoUsuario = new Follower.Models.Usuario
                     {
                         Correo = modelo.Correo,
-                                    ContrasenaHash = BCrypt.Net.BCrypt.HashPassword(modelo.Contrasena),
+                                    ContrasenaHash = modelo.Contrasena,
                                     IdRol = 2
                     };
                 DbContext.Usuarios.Add(nuevoUsuario);

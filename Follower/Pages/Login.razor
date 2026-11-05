@@ -106,9 +106,9 @@
 
 
 
-
-            if (usuario == null || !BCrypt.Net.BCrypt.Verify(modelo.Contrasena,usuario.ContrasenaHash ))
-            {
+            //!BCrypt.Net.BCrypt.Verify(modelo.Contrasena,usuario.ContrasenaHash
+            if (usuario == null || usuario.ContrasenaHash != modelo.Contrasena)
+    {
                 mensajeError = "El correo electrónico o la contraseña son incorrectos. Verifica tus datos e inténtalo de nuevo.";
                 return;
             }
@@ -119,9 +119,20 @@
                 return;
             }
 
+            string nombreCompleto = "Usuario";
+            if (usuario.Egresado != null)
+            {
+                nombreCompleto = $"{usuario.Egresado.Nombres} {usuario.Egresado.ApellidoPaterno} {usuario.Egresado.ApellidoMaterno}".ToUpper().Trim();
+            }
+            else if (usuario.Rol.NombreRol == "ResponsablePrograma")
+            {
+                nombreCompleto = "Responsable";
+            }
+
+
 
             var customAuthStateProvider = (CustomAuthStateProvider)authStateProvider;
-            await customAuthStateProvider.IniciarSesion(usuario.IdUsuario.ToString(), usuario.Rol.NombreRol);
+            await customAuthStateProvider.IniciarSesion(usuario.IdUsuario.ToString(), usuario.Rol.NombreRol, nombreCompleto);
             Console.WriteLine($"usuario logueado: {usuario.Correo} con rol: {usuario.Rol.NombreRol}");
             if (usuario.Rol.NombreRol == "ResponsablePrograma")
             {
