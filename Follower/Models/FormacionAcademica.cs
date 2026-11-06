@@ -23,6 +23,8 @@ namespace Follower.Models
         public string? EstadoPrograma { get; set;  }
         public DateTime? FechaInicio { get; set;  }
         public DateTime? FechaFin { get; set;  }
+        
+        public bool EsFormacionActual { get; set; }
         public bool RecibioBeca { get; set; }
         [MaxLength(150)]
         public string? TipoApoyo { get; set; }

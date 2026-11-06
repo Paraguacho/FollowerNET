@@ -1,0 +1,457 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Follower.Services
+@using Follower.Models
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IEgresadoService EgresadoService
+
+@if (cargando)
+{
+    <div class="flex justify-center items-center min-h-[400px]">
+        <p class="text-gray-500">Cargando trayectoria...</p>
+    </div>
+}
+else
+{
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Trayectoria académica y profesional</h1>
+        <p class="text-gray-500">Mantén actualizado tu historial de empleos, grados académicos y actividades clave.</p>
+    </div>
+
+    <div class="space-y-6">
+        
+        <!-- SITUACIÓN LABORAL ACTUAL -->
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Situación laboral actual</h2>
+            
+            <div class="mb-6">
+                <label class="block text-xs font-bold text-gray-700 mb-2">¿Cuál es tu situación laboral actual?</label>
+                <select @bind="egresado.SituacionLaboral.EstadoActual" class="w-full md:w-1/2 border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                    <option value="">Seleccione una opción...</option>
+                    <option value="Empleo de tiempo completo">Empleo de tiempo completo</option>
+                    <option value="Empleo de medio tiempo">Empleo de medio tiempo</option>
+                    <option value="Trabajador independiente / Freelance">Trabajador independiente / Freelance</option>
+                    <option value="Buscando empleo">Buscando empleo</option>
+                    <option value="Estudiando exclusivamente">Estudiando exclusivamente</option>
+                </select>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 mb-4">
+                <p class="text-sm font-bold text-gray-800 mb-3">Desde tu última actualización, ¿has tenido algún cambio profesional relevante?</p>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" @bind="egresado.SituacionLaboral.NuevoEmpleo" class="rounded text-[#003366] focus:ring-[#003366]" />
+                        <span class="text-sm text-gray-700">Nuevo empleo</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" @bind="egresado.SituacionLaboral.Promocion" class="rounded text-[#003366] focus:ring-[#003366]" />
+                        <span class="text-sm text-gray-700">Promoción</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" @bind="egresado.SituacionLaboral.CambioInstitucion" class="rounded text-[#003366] focus:ring-[#003366]" />
+                        <span class="text-sm text-gray-700">Cambio de institución</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" @bind="egresado.SituacionLaboral.NuevasResponsabilidades" class="rounded text-[#003366] focus:ring-[#003366]" />
+                        <span class="text-sm text-gray-700">Nuevas responsabilidades</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" @bind="egresado.SituacionLaboral.IncorporacionPosgrado" class="rounded text-[#003366] focus:ring-[#003366]" />
+                        <span class="text-sm text-gray-700">Incorporación a un posgrado</span>
+                    </label>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" @bind="egresado.SituacionLaboral.EmprendimientoPropio" class="rounded text-[#003366] focus:ring-[#003366]" />
+                        <span class="text-sm text-gray-700">Emprendimiento propio</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex justify-end">
+                <button @onclick="GuardarCambios" class="px-6 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244] shadow-sm">
+                    Guardar situación actual
+                </button>
+            </div>
+        </div>
+
+        <!-- HISTORIAL EMPLEOS -->
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-gray-900">Historial de empleos</h2>
+                @if (!mostrandoFormEmpleo)
+                {
+                    <button @onclick="() => mostrandoFormEmpleo = true" class="text-sm font-medium text-[#003366] hover:underline">
+                        + Registrar nuevo empleo
+                    </button>
+                }
+            </div>
+
+            <!-- Lista de empleos guardados -->
+            @if (egresado.ExperienciasLaborales.Any())
+            {
+                <div class="space-y-4 mb-6">
+                    @foreach (var empleo in egresado.ExperienciasLaborales)
+                    {
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-gray-900">@empleo.Puesto</h3>
+                                    <p class="text-sm text-gray-600">@empleo.Institucion • @(empleo.Sector ?? "Sector no especificado")</p>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        @(empleo.FechaInicio?.ToString("MMM yyyy") ?? "N/A") - 
+                                        @(empleo.EsEmpleoActual ? "Actualidad" : (empleo.FechaFin?.ToString("MMM yyyy") ?? "N/A"))
+                                    </p>
+                                </div>
+                                <button @onclick="() => ConfirmarEliminarEmpleo(empleo)" class="text-xs text-red-600 hover:text-red-800 font-medium">Eliminar</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (!mostrandoFormEmpleo)
+            {
+                <p class="text-sm text-gray-500 mb-6 italic">No has registrado ninguna experiencia laboral aún.</p>
+            }
+
+            <!-- Formulario de Nuevo Empleo -->
+            @if (mostrandoFormEmpleo)
+            {
+                <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-5">
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar nuevo empleo</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Institución o empresa</label>
+                            <input type="text" @bind="nuevoEmpleo.Institucion" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Puesto o función</label>
+                            <input type="text" @bind="nuevoEmpleo.Puesto" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Sector</label>
+                            <select @bind="nuevoEmpleo.Sector" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                                <option value="">Seleccione un sector...</option>
+                                <option value="Público">Público</option>
+                                <option value="Privado">Privado</option>
+                                <option value="Educativo">Educativo</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Fecha de inicio</label>
+                            <input type="date" @bind="nuevoEmpleo.FechaInicio" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Fecha de término</label>
+                            <input type="date" @bind="nuevoEmpleo.FechaFin" disabled="@nuevoEmpleo.EsEmpleoActual" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] disabled:bg-gray-100" />
+                            <label class="flex items-center space-x-2 mt-2 cursor-pointer">
+                                <input type="checkbox" @bind="nuevoEmpleo.EsEmpleoActual" class="rounded text-[#003366] focus:ring-[#003366]" />
+                                <span class="text-xs text-gray-600">Actualmente trabajo aquí</span>
+                            </label>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Actividades principales</label>
+                            <textarea @bind="nuevoEmpleo.ActividadesPrincipales" rows="3" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] resize-none"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- MIED -->
+                    <div class="bg-blue-50/50 p-4 rounded border border-blue-100 mb-4">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="text-xs font-bold text-gray-700">Relevancia para la evaluación de la MIED</span>
+                            <span class="bg-blue-100 text-[#003366] text-[10px] font-bold px-2 py-1 rounded">DATO DEL PROGRAMA</span>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">Nivel educativo en el que trabaja (si corresponde)</label>
+                                <input type="text" @bind="nuevoEmpleo.NivelEducativo" placeholder="Ej. Educación Básica, Superior..." class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">¿Qué tan relacionado está este empleo con la formación MIED?</label>
+                                <select @bind="nuevoEmpleo.RelacionConFormacion" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                                    <option value="">Seleccione una opción...</option>
+                                    <option value="Totalmente relacionado">Totalmente relacionado</option>
+                                    <option value="Parcialmente relacionado">Parcialmente relacionado</option>
+                                    <option value="Poco relacionado">Poco relacionado</option>
+                                    <option value="Nada relacionado">Nada relacionado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
+                        <button @onclick="CancelarNuevoEmpleo" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
+                        <button @onclick="GuardarEmpleo" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar empleo</button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!--  FORMACIÓN ACADÉMICA -->
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-lg font-bold text-gray-900">Formación académica (posgrados posteriores)</h2>
+                @if (!mostrandoFormEstudio)
+                {
+                    <button @onclick="() => mostrandoFormEstudio = true" class="text-sm font-medium text-[#003366] hover:underline">
+                        + Registrar nuevo estudio
+                    </button>
+                }
+            </div>
+
+            <!-- Lista de estudios guardados -->
+            @if (egresado.FormacionesAcademicas.Any())
+            {
+                <div class="space-y-4 mb-6">
+                    @foreach (var estudio in egresado.FormacionesAcademicas)
+                    {
+                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-gray-900">@estudio.NombrePrograma</h3>
+                                    <p class="text-sm text-gray-600">@estudio.Institucion • @(estudio.Grado)</p>
+                                    @if(estudio.RecibioBeca)
+                                    {
+                                        <p class="text-xs text-[#003366] mt-1 font-medium bg-blue-50 inline-block px-2 py-1 rounded">
+                                            Con apoyo/beca: @estudio.InstitucionOtorgante
+                                        </p>
+                                    }
+                                </div>
+                                <button @onclick="() => ConfirmarEliminarEstudio(estudio)" class="text-xs text-red-600 hover:text-red-800 font-medium">Eliminar</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (!mostrandoFormEstudio)
+            {
+                <p class="text-sm text-gray-500 mb-6 italic">No has registrado posgrados o estudios adicionales.</p>
+            }
+
+            <!-- Formulario de Nuevo Estudio -->
+            @if (mostrandoFormEstudio)
+            {
+                <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-5">
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar nuevo programa de estudio</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Nombre del programa</label>
+                            <input type="text" @bind="nuevoEstudio.NombrePrograma" placeholder="Ej. Doctorado en Ciencias Educativas" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Grado</label>
+                            <select @bind="nuevoEstudio.Grado" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                                <option value="">Seleccione...</option>
+                                <option value="Maestría">Maestría</option>
+                                <option value="Doctorado">Doctorado</option>
+                                <option value="Diplomado">Diplomado</option>
+                                <option value="Especialidad">Especialidad</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Institución</label>
+                            <input type="text" @bind="nuevoEstudio.Institucion" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Estado del programa</label>
+                            <select @bind="nuevoEstudio.EstadoPrograma" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                                <option value="">Seleccione...</option>
+                                <option value="Lo estoy cursando actualmente">Lo estoy cursando actualmente</option>
+                                <option value="Lo concluí (pero no me he titulado)">Lo concluí (pero no me he titulado)</option>
+                                <option value="Lo concluí y estoy titulado(a)">Lo concluí y estoy titulado(a)</option>
+                                <option value="Lo inicié, pero no lo concluí">Lo inicié, pero no lo concluí</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">País</label>
+                            <input type="text" @bind="nuevoEstudio.Pais" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+
+
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Fecha de inicio</label>
+                            <input type="date" @bind="nuevoEstudio.FechaInicio" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Fecha de término</label>
+                            <input type="date" @bind="nuevoEstudio.FechaFin" disabled="@nuevoEstudio.EsFormacionActual" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] disabled:bg-gray-100" />
+                            <label class="flex items-center space-x-2 mt-2 cursor-pointer">
+                                <input type="checkbox" @bind="nuevoEstudio.EsFormacionActual" class="rounded text-[#003366] focus:ring-[#003366]" />
+                                <span class="text-xs text-gray-600">Actualmente estudio aquí</span>
+                            </label>
+                        </div
+
+
+
+                    </div>
+
+                    <!-- Sección de Becas -->
+                    <div class="bg-gray-50 p-4 rounded border border-gray-200 mb-4">
+                        <label class="flex items-center space-x-2 cursor-pointer mb-3">
+                            <input type="checkbox" @bind="nuevoEstudio.RecibioBeca" class="rounded text-[#003366] focus:ring-[#003366]" />
+                            <span class="text-sm font-bold text-gray-800">¿Has recibido alguna beca o algún apoyo para esta formación?</span>
+                        </label>
+
+                        @if (nuevoEstudio.RecibioBeca)
+                        {
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-200">
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs text-gray-500 mb-1">Tipo de apoyo</label>
+                                    <input type="text" @bind="nuevoEstudio.TipoApoyo" placeholder="Ej. Beca nacional de posgrado CONAHCYT" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs text-gray-500 mb-1">Institución que otorgó el apoyo</label>
+                                    <input type="text" @bind="nuevoEstudio.InstitucionOtorgante" placeholder="Ej. CONAHCYT" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Año de otorgamiento</label>
+                                    <input type="number" @bind="nuevoEstudio.AnoOtorgamiento" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Monto asignado (opcional)</label>
+                                    <input type="number" step="0.01" @bind="nuevoEstudio.MontoAsignado" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
+                        <button @onclick="CancelarNuevoEstudio" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
+                        <button @onclick="GuardarEstudio" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar estudio</button>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- Toast  -->
+    @if (!string.IsNullOrEmpty(mensajeNotificacion))
+    {
+        <div class="fixed bottom-6 right-6 bg-white text-slate-800 px-5 py-3 rounded-md shadow-lg border border-slate-100 flex items-center z-50 transform transition-all duration-300">
+            <svg class="w-5 h-5 mr-3 text-[#03126B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-sm font-normal tracking-wide">@mensajeNotificacion</span>
+        </div>
+    }
+}
+
+@code {
+    private bool cargando = true;
+    private Egresado egresado = new Egresado();
+    private string? mensajeNotificacion = null;
+    private bool mostrandoFormEmpleo = false;
+    private ExperienciaLaboral nuevoEmpleo = new ExperienciaLaboral();
+
+    private bool mostrandoFormEstudio = false;
+    private FormacionAcademica nuevoEstudio = new FormacionAcademica();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var userIdString = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdString, out int userId))
+            {
+                var egresadoDb = await EgresadoService.ObtenerPorUsuarioIdAsync(userId);
+                if (egresadoDb != null)
+                {
+                    egresado = egresadoDb;
+                }
+            }
+        }
+        cargando = false; 
+    }
+
+    // Guarda el perfil general 
+    private async Task GuardarCambios()
+    {
+        await EgresadoService.ActualizarAsync(egresado);
+        await MostrarNotificacion("Situación laboral actualizada exitosamente.");
+    }
+
+    // Lógica de Experiencia Laboral 
+    private async Task GuardarEmpleo()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoEmpleo.Institucion) || string.IsNullOrWhiteSpace(nuevoEmpleo.Puesto))
+        {
+            await MostrarNotificacion("Institución y Puesto son obligatorios.");
+            return;
+        }
+
+        nuevoEmpleo.EgresadoId = egresado.IdEgresado;
+        egresado.ExperienciasLaborales.Add(nuevoEmpleo);
+        
+        await EgresadoService.ActualizarAsync(egresado);
+        
+        nuevoEmpleo = new ExperienciaLaboral(); 
+        mostrandoFormEmpleo = false; 
+        await MostrarNotificacion("Empleo registrado exitosamente.");
+    }
+
+    private void CancelarNuevoEmpleo()
+    {
+        nuevoEmpleo = new ExperienciaLaboral();
+        mostrandoFormEmpleo = false;
+    }
+
+    private async Task ConfirmarEliminarEmpleo(ExperienciaLaboral empleo)
+    {
+        // Si el registro ya existe en BD lo elimina con el servicio
+        if (empleo.IdExperienciaLaboral > 0)
+        {
+            await EgresadoService.EliminarExperienciaLaboralAsync(empleo);
+        }
+        
+        egresado.ExperienciasLaborales.Remove(empleo);
+        await MostrarNotificacion("Empleo eliminado.");
+    }
+
+    // Lógica de Formación Académica 
+    private async Task GuardarEstudio()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoEstudio.NombrePrograma))
+        {
+            await MostrarNotificacion("El nombre del programa es obligatorio.");
+            return;
+        }
+
+        nuevoEstudio.EgresadoId = egresado.IdEgresado;
+        egresado.FormacionesAcademicas.Add(nuevoEstudio);
+        
+        await EgresadoService.ActualizarAsync(egresado);
+        
+        nuevoEstudio = new FormacionAcademica(); 
+        mostrandoFormEstudio = false;
+        await MostrarNotificacion("Estudio registrado exitosamente.");
+    }
+
+    private void CancelarNuevoEstudio()
+    {
+        nuevoEstudio = new FormacionAcademica();
+        mostrandoFormEstudio = false;
+    }
+
+    private async Task ConfirmarEliminarEstudio(FormacionAcademica estudio)
+    {
+        if (estudio.IdFormacionAcademica > 0)
+        {
+            await EgresadoService.EliminarFormacionAcademicaAsync(estudio);
+        }
+        
+        egresado.FormacionesAcademicas.Remove(estudio);
+        await MostrarNotificacion("Estudio eliminado.");
+    }
+
+    // alertas
+    private async Task MostrarNotificacion(string mensaje)
+    {
+        mensajeNotificacion = mensaje;
+        StateHasChanged();
+        await Task.Delay(3000);
+        mensajeNotificacion = null;
+        StateHasChanged();
+    }
+}

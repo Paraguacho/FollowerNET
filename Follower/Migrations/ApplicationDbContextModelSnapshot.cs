@@ -221,6 +221,9 @@ namespace Follower.Migrations
                     b.Property<int>("EgresadoId")
                         .HasColumnType("int");
 
+                    b.Property<bool>("EsFormacionActual")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("EstadoPrograma")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
@@ -453,7 +456,7 @@ namespace Follower.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("varchar(150)");
 
-                    b.Property<bool>("IncorporacionPosgradoñ")
+                    b.Property<bool>("IncorporacionPosgrado")
                         .HasColumnType("tinyint(1)");
 
                     b.Property<bool>("NuevasResponsabilidades")

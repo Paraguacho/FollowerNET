@@ -19,7 +19,7 @@ namespace Follower.Models
         public bool Promocion { get; set; }
         public bool CambioInstitucion { get; set; }
         public bool NuevasResponsabilidades { get; set;  }
-        public bool IncorporacionPosgradoñ { get; set; }
+        public bool IncorporacionPosgrado { get; set; }
         public bool EmprendimientoPropio { get; set;  } 
 
 
