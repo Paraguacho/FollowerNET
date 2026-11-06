@@ -10,7 +10,7 @@ namespace Follower.Models
         public int Id { get; set; } 
         public int EgresadoId { get; set; }
         [ForeignKey("EgresadoId")]
-        public Egresado Egresado { get; set; } = null;
+        public Egresado Egresado { get; set; } = null!;
         [MaxLength(255)]
         public string? Orcid { get; set;  }
         [MaxLength(255)]

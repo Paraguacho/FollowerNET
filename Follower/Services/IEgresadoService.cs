@@ -6,5 +6,7 @@ namespace Follower.Services
     {
         Task<Egresado?> ObtenerPorUsuarioIdAsync(int idUsuario);
         Task ActualizarAsync(Egresado egresado);
+        Task EliminarExperienciaLaboralAsync(ExperienciaLaboral experiencia);
+        Task EliminarFormacionAcademicaAsync(FormacionAcademica formacion);
     }
 }

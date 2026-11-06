@@ -78,9 +78,15 @@ namespace Follower.Models
 
         public ICollection<ValorCampoEgresado> ValoresCamposPersonalizados { get; set; } = new List<ValorCampoEgresado>();
 
+        public SituacionLaboral SituacionLaboral { get; set; }
+        public ICollection<ExperienciaLaboral> ExperienciasLaborales { get; set; }
+        public ICollection<FormacionAcademica> FormacionesAcademicas { get; set; }
         public Egresado()
         {
             PerfilAcademico = new PerfilAcademico();
+            SituacionLaboral = new SituacionLaboral();
+            ExperienciasLaborales = new List<ExperienciaLaboral>();
+            FormacionesAcademicas = new List<FormacionAcademica>();
         }
 
 

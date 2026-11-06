@@ -19,6 +19,10 @@ namespace Follower.Data
         public DbSet<ValorCampoEgresado> ValoresCamposEgresados { get; set; }
         public DbSet<PerfilAcademico> PerfilesAcademicos { get; set; }
 
+        public DbSet<SituacionLaboral>SituacionesLaborales { get; set; }
+        public DbSet<ExperienciaLaboral> ExperienciasLaborales { get; set; }
+        public DbSet<FormacionAcademica> FormacionesAcademicas { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
