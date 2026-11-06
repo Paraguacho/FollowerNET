@@ -1,3 +1,85 @@
+DROP PROCEDURE IF EXISTS `POMELO_BEFORE_DROP_PRIMARY_KEY`;
+DELIMITER //
+CREATE PROCEDURE `POMELO_BEFORE_DROP_PRIMARY_KEY`(IN `SCHEMA_NAME_ARGUMENT` VARCHAR(255), IN `TABLE_NAME_ARGUMENT` VARCHAR(255))
+BEGIN
+	DECLARE HAS_AUTO_INCREMENT_ID TINYINT(1);
+	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
+	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
+	DECLARE SQL_EXP VARCHAR(1000);
+	SELECT COUNT(*)
+		INTO HAS_AUTO_INCREMENT_ID
+		FROM `information_schema`.`COLUMNS`
+		WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+			AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+			AND `Extra` = 'auto_increment'
+			AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+	IF HAS_AUTO_INCREMENT_ID THEN
+		SELECT `COLUMN_TYPE`
+			INTO PRIMARY_KEY_TYPE
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+		SELECT `COLUMN_NAME`
+			INTO PRIMARY_KEY_COLUMN_NAME
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_KEY` = 'PRI'
+			LIMIT 1;
+		SET SQL_EXP = CONCAT('ALTER TABLE `', (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA())), '`.`', TABLE_NAME_ARGUMENT, '` MODIFY COLUMN `', PRIMARY_KEY_COLUMN_NAME, '` ', PRIMARY_KEY_TYPE, ' NOT NULL;');
+		SET @SQL_EXP = SQL_EXP;
+		PREPARE SQL_EXP_EXECUTE FROM @SQL_EXP;
+		EXECUTE SQL_EXP_EXECUTE;
+		DEALLOCATE PREPARE SQL_EXP_EXECUTE;
+	END IF;
+END //
+DELIMITER ;
+
+DROP PROCEDURE IF EXISTS `POMELO_AFTER_ADD_PRIMARY_KEY`;
+DELIMITER //
+CREATE PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`(IN `SCHEMA_NAME_ARGUMENT` VARCHAR(255), IN `TABLE_NAME_ARGUMENT` VARCHAR(255), IN `COLUMN_NAME_ARGUMENT` VARCHAR(255))
+BEGIN
+	DECLARE HAS_AUTO_INCREMENT_ID INT(11);
+	DECLARE PRIMARY_KEY_COLUMN_NAME VARCHAR(255);
+	DECLARE PRIMARY_KEY_TYPE VARCHAR(255);
+	DECLARE SQL_EXP VARCHAR(1000);
+	SELECT COUNT(*)
+		INTO HAS_AUTO_INCREMENT_ID
+		FROM `information_schema`.`COLUMNS`
+		WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+			AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+			AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+			AND `COLUMN_TYPE` LIKE '%int%'
+			AND `COLUMN_KEY` = 'PRI';
+	IF HAS_AUTO_INCREMENT_ID THEN
+		SELECT `COLUMN_TYPE`
+			INTO PRIMARY_KEY_TYPE
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_KEY` = 'PRI';
+		SELECT `COLUMN_NAME`
+			INTO PRIMARY_KEY_COLUMN_NAME
+			FROM `information_schema`.`COLUMNS`
+			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
+				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
+				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
+				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_KEY` = 'PRI';
+		SET SQL_EXP = CONCAT('ALTER TABLE `', (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA())), '`.`', TABLE_NAME_ARGUMENT, '` MODIFY COLUMN `', PRIMARY_KEY_COLUMN_NAME, '` ', PRIMARY_KEY_TYPE, ' NOT NULL AUTO_INCREMENT;');
+		SET @SQL_EXP = SQL_EXP;
+		PREPARE SQL_EXP_EXECUTE FROM @SQL_EXP;
+		EXECUTE SQL_EXP_EXECUTE;
+		DEALLOCATE PREPARE SQL_EXP_EXECUTE;
+	END IF;
+END //
+DELIMITER ;
+
 CREATE TABLE IF NOT EXISTS `__EFMigrationsHistory` (
     `MigrationId` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
     `ProductVersion` varchar(32) CHARACTER SET utf8mb4 NOT NULL,
@@ -130,7 +212,6 @@ BEGIN
         `IdEgresados` int NOT NULL AUTO_INCREMENT,
         `IdUsuario` int NOT NULL,
         `IdPrograma` int NOT NULL,
-        -- Aprobado // Pendiente // Rechazado
         `EstadoSolicitud` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
         `PrivacidadPerfil` varchar(20) CHARACTER SET utf8mb4 NOT NULL,
         `Nombres` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
@@ -486,19 +567,409 @@ DROP PROCEDURE MigrationsScript;
 COMMIT;
 
 START TRANSACTION;
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105232002_AgregarPerfilAcademico') THEN
 
--- Crear los Roles
-INSERT INTO `Roles` (`NombreRol`) 
-VALUES 
-    ('ResponsablePrograma'), 
-    ('Egresado');
+    CREATE TABLE `PerfilesAcademicos` (
+        `Id` int NOT NULL AUTO_INCREMENT,
+        `EgresadoId` int NOT NULL,
+        `Orcid` varchar(255) CHARACTER SET utf8mb4 NULL,
+        `GoogleScholar` varchar(255) CHARACTER SET utf8mb4 NULL,
+        `ResearchGate` varchar(255) CHARACTER SET utf8mb4 NULL,
+        `AcademiaEdu` varchar(255) CHARACTER SET utf8mb4 NULL,
+        `ScopusId` varchar(255) CHARACTER SET utf8mb4 NULL,
+        `LinkedIn` varchar(255) CHARACTER SET utf8mb4 NULL,
+        CONSTRAINT `PK_PerfilesAcademicos` PRIMARY KEY (`Id`),
+        CONSTRAINT `FK_PerfilesAcademicos_Egresados_EgresadoId` FOREIGN KEY (`EgresadoId`) REFERENCES `Egresados` (`IdEgresado`) ON DELETE CASCADE
+    ) CHARACTER SET=utf8mb4;
 
--- Crear los Programas Educativos
-INSERT INTO `Programas_Educativos` (`NombrePrograma`, `Siglas`) 
-VALUES 
-    ('Maestría en Investigación Educativa', 'MIED'),
-    ('Ingeniero de software', 'ISW');
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
 
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105232002_AgregarPerfilAcademico') THEN
+
+    CREATE UNIQUE INDEX `IX_PerfilesAcademicos_EgresadoId` ON `PerfilesAcademicos` (`EgresadoId`);
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105232002_AgregarPerfilAcademico') THEN
+
+    INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+    VALUES ('20261105232002_AgregarPerfilAcademico', '10.0.14');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
 
 COMMIT;
+
+START TRANSACTION;
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105234852_cambioNombre') THEN
+
+    ALTER TABLE `PerfilesAcademicos` DROP FOREIGN KEY `FK_PerfilesAcademicos_Egresados_EgresadoId`;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105234852_cambioNombre') THEN
+
+    CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'PerfilesAcademicos');
+    ALTER TABLE `PerfilesAcademicos` DROP PRIMARY KEY;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105234852_cambioNombre') THEN
+
+    ALTER TABLE `PerfilesAcademicos` RENAME `Perfiles_Academicos`;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105234852_cambioNombre') THEN
+
+    ALTER TABLE `Perfiles_Academicos` RENAME INDEX `IX_PerfilesAcademicos_EgresadoId` TO `IX_Perfiles_Academicos_EgresadoId`;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105234852_cambioNombre') THEN
+
+    ALTER TABLE `Perfiles_Academicos` ADD CONSTRAINT `PK_Perfiles_Academicos` PRIMARY KEY (`Id`);
+    CALL POMELO_AFTER_ADD_PRIMARY_KEY(NULL, 'Perfiles_Academicos', 'Id');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105234852_cambioNombre') THEN
+
+    ALTER TABLE `Perfiles_Academicos` ADD CONSTRAINT `FK_Perfiles_Academicos_Egresados_EgresadoId` FOREIGN KEY (`EgresadoId`) REFERENCES `Egresados` (`IdEgresado`) ON DELETE CASCADE;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261105234852_cambioNombre') THEN
+
+    INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+    VALUES ('20261105234852_cambioNombre', '10.0.14');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+COMMIT;
+
+START TRANSACTION;
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106073224_AgregarTrayectoriaEgresado') THEN
+
+    CREATE TABLE `Experiencias_Laborales` (
+        `IdExperienciaLaboral` int NOT NULL AUTO_INCREMENT,
+        `EgresadoId` int NOT NULL,
+        `Institucion` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+        `Puesto` varchar(150) CHARACTER SET utf8mb4 NOT NULL,
+        `Sector` varchar(100) CHARACTER SET utf8mb4 NULL,
+        `FechaInicio` datetime(6) NULL,
+        `FechaFin` datetime(6) NULL,
+        `EsEmpleoActual` tinyint(1) NOT NULL,
+        `ActividadesPrincipales` varchar(1000) CHARACTER SET utf8mb4 NULL,
+        `NivelEducativo` varchar(150) CHARACTER SET utf8mb4 NULL,
+        `RelacionConFormacion` varchar(100) CHARACTER SET utf8mb4 NULL,
+        CONSTRAINT `PK_Experiencias_Laborales` PRIMARY KEY (`IdExperienciaLaboral`),
+        CONSTRAINT `FK_Experiencias_Laborales_Egresados_EgresadoId` FOREIGN KEY (`EgresadoId`) REFERENCES `Egresados` (`IdEgresado`) ON DELETE CASCADE
+    ) CHARACTER SET=utf8mb4;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106073224_AgregarTrayectoriaEgresado') THEN
+
+    CREATE TABLE `Formaciones_Academicas` (
+        `IdFormacionAcademica` int NOT NULL AUTO_INCREMENT,
+        `EgresadoId` int NOT NULL,
+        `NombrePrograma` varchar(200) CHARACTER SET utf8mb4 NOT NULL,
+        `Grado` varchar(100) CHARACTER SET utf8mb4 NULL,
+        `Institucion` varchar(200) CHARACTER SET utf8mb4 NULL,
+        `Pais` varchar(100) CHARACTER SET utf8mb4 NULL,
+        `EstadoPrograma` varchar(100) CHARACTER SET utf8mb4 NULL,
+        `FechaInicio` datetime(6) NULL,
+        `FechaFin` datetime(6) NULL,
+        `RecibioBeca` tinyint(1) NOT NULL,
+        `TipoApoyo` varchar(150) CHARACTER SET utf8mb4 NULL,
+        `InstitucionOtorgante` varchar(200) CHARACTER SET utf8mb4 NULL,
+        `AnoOtorgamiento` int NULL,
+        `MontoAsignado` decimal(18,2) NULL,
+        CONSTRAINT `PK_Formaciones_Academicas` PRIMARY KEY (`IdFormacionAcademica`),
+        CONSTRAINT `FK_Formaciones_Academicas_Egresados_EgresadoId` FOREIGN KEY (`EgresadoId`) REFERENCES `Egresados` (`IdEgresado`) ON DELETE CASCADE
+    ) CHARACTER SET=utf8mb4;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106073224_AgregarTrayectoriaEgresado') THEN
+
+    CREATE TABLE `Situaciones_Laborales` (
+        `IdSituacionLaboral` int NOT NULL AUTO_INCREMENT,
+        `EgreasdoId` int NOT NULL,
+        `EgresadoId` int NOT NULL,
+        `EstadoActual` varchar(150) CHARACTER SET utf8mb4 NULL,
+        `NuevoEmpleo` tinyint(1) NOT NULL,
+        `Promocion` tinyint(1) NOT NULL,
+        `CambioInstitucion` tinyint(1) NOT NULL,
+        `NuevasResponsabilidades` tinyint(1) NOT NULL,
+        `IncorporacionPosgradoñ` tinyint(1) NOT NULL,
+        `EmprendimientoPropio` tinyint(1) NOT NULL,
+        CONSTRAINT `PK_Situaciones_Laborales` PRIMARY KEY (`IdSituacionLaboral`),
+        CONSTRAINT `FK_Situaciones_Laborales_Egresados_EgresadoId` FOREIGN KEY (`EgresadoId`) REFERENCES `Egresados` (`IdEgresado`) ON DELETE CASCADE
+    ) CHARACTER SET=utf8mb4;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106073224_AgregarTrayectoriaEgresado') THEN
+
+    CREATE INDEX `IX_Experiencias_Laborales_EgresadoId` ON `Experiencias_Laborales` (`EgresadoId`);
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106073224_AgregarTrayectoriaEgresado') THEN
+
+    CREATE INDEX `IX_Formaciones_Academicas_EgresadoId` ON `Formaciones_Academicas` (`EgresadoId`);
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106073224_AgregarTrayectoriaEgresado') THEN
+
+    CREATE UNIQUE INDEX `IX_Situaciones_Laborales_EgresadoId` ON `Situaciones_Laborales` (`EgresadoId`);
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106073224_AgregarTrayectoriaEgresado') THEN
+
+    INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+    VALUES ('20261106073224_AgregarTrayectoriaEgresado', '10.0.14');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+COMMIT;
+
+START TRANSACTION;
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106075203_CorreccionNombre') THEN
+
+    ALTER TABLE `Situaciones_Laborales` DROP COLUMN `EgreasdoId`;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106075203_CorreccionNombre') THEN
+
+    INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+    VALUES ('20261106075203_CorreccionNombre', '10.0.14');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+COMMIT;
+
+START TRANSACTION;
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106080803_correccionnombre2') THEN
+
+    ALTER TABLE `Situaciones_Laborales` RENAME COLUMN `IncorporacionPosgradoñ` TO `IncorporacionPosgrado`;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106080803_correccionnombre2') THEN
+
+    INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+    VALUES ('20261106080803_correccionnombre2', '10.0.14');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+COMMIT;
+
+START TRANSACTION;
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106083825_formacionActual') THEN
+
+    ALTER TABLE `Formaciones_Academicas` ADD `EsFormacionActual` tinyint(1) NOT NULL DEFAULT FALSE;
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+DROP PROCEDURE IF EXISTS MigrationsScript;
+DELIMITER //
+CREATE PROCEDURE MigrationsScript()
+BEGIN
+    IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '20261106083825_formacionActual') THEN
+
+    INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+    VALUES ('20261106083825_formacionActual', '10.0.14');
+
+    END IF;
+END //
+DELIMITER ;
+CALL MigrationsScript();
+DROP PROCEDURE MigrationsScript;
+
+COMMIT;
+
+DROP PROCEDURE `POMELO_BEFORE_DROP_PRIMARY_KEY`;
+
+DROP PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`;
 
