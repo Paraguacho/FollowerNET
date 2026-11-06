@@ -74,9 +74,14 @@ namespace Follower.Models
 
         public string? MotivoRechazo { get; set; }
         public DateTime FechaUltimaActualizacion { get; set; } = DateTime.UtcNow;
+       public PerfilAcademico PerfilAcademico { get; set; }
 
         public ICollection<ValorCampoEgresado> ValoresCamposPersonalizados { get; set; } = new List<ValorCampoEgresado>();
 
+        public Egresado()
+        {
+            PerfilAcademico = new PerfilAcademico();
+        }
 
 
 

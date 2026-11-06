@@ -180,6 +180,49 @@ namespace Follower.Migrations
                     b.ToTable("Opciones_Catalogo_Campo");
                 });
 
+            modelBuilder.Entity("Follower.Models.PerfilAcademico", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AcademiaEdu")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("EgresadoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("GoogleScholar")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("LinkedIn")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Orcid")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("ResearchGate")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("ScopusId")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EgresadoId")
+                        .IsUnique();
+
+                    b.ToTable("Perfiles_Academicos");
+                });
+
             modelBuilder.Entity("Follower.Models.ProgramaEducativo", b =>
                 {
                     b.Property<int>("IdPrograma")
@@ -379,6 +422,17 @@ namespace Follower.Migrations
                     b.Navigation("CampoPersonalizado");
                 });
 
+            modelBuilder.Entity("Follower.Models.PerfilAcademico", b =>
+                {
+                    b.HasOne("Follower.Models.Egresado", "Egresado")
+                        .WithOne("PerfilAcademico")
+                        .HasForeignKey("Follower.Models.PerfilAcademico", "EgresadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Egresado");
+                });
+
             modelBuilder.Entity("Follower.Models.ProgramaResponsable", b =>
                 {
                     b.HasOne("Follower.Models.ProgramaEducativo", "ProgramaEducativo")
@@ -448,6 +502,9 @@ namespace Follower.Migrations
 
             modelBuilder.Entity("Follower.Models.Egresado", b =>
                 {
+                    b.Navigation("PerfilAcademico")
+                        .IsRequired();
+
                     b.Navigation("ValoresCamposPersonalizados");
                 });
 

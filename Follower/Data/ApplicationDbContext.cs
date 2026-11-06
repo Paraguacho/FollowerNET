@@ -17,6 +17,7 @@ namespace Follower.Data
         public DbSet<CampoPersonalizado> CamposPersonalizados { get; set; }
         public DbSet<OpcionCatalogoCampo> OpcionesCatalogoCampos { get; set; }
         public DbSet<ValorCampoEgresado> ValoresCamposEgresados { get; set; }
+        public DbSet<PerfilAcademico> PerfilesAcademicos { get; set; }
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

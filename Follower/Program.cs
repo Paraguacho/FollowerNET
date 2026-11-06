@@ -2,6 +2,8 @@ using Follower.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Components.Authorization;
 using Follower.Auth;
+using Microsoft.AspNetCore.Identity;
+using Follower.Services;
 
 
 namespace Follower
@@ -21,6 +23,7 @@ namespace Follower
             builder.Services.AddServerSideBlazor();
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+            builder.Services.AddScoped<IEgresadoService,EgresadoService>();            
 
 
             var app = builder.Build();

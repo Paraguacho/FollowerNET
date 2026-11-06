@@ -1,86 +1,216 @@
-﻿<div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-900">Información general</h1>
-    <p class="text-gray-500">Configura tu foto de perfil, datos personales básicos y perfiles académicos.</p>
-</div>
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Follower.Services
+@inject AuthenticationStateProvider AuthStateProvider
+@using Follower.Models
+@inject IEgresadoService EgresadoService
 
-<div class="space-y-6">
-    <!-- Fotografia de perfil-->
-    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-4">Fotografía de perfil</h2>
-        <div class="flex items-center space-x-6 mb-6">
-            <!-- INICIALES, CAMBIAR PROXIMAMENTE-->
-            <div class="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center border border-gray-300 text-2xl font-bold text-gray-400">
-                SM  
-            </div>
-            <div class="flex flex-col space-y-2">
-                <div class="flex space-x-3">
-                    <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Seleccionar archivo</button>
-                    <button class="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700">Eliminar</button>
-                </div>
-                <p class="text-xs text-gray-500">Formatos permitidos: JPG, PNG.<br />Tamaño máximo: 5 MB.</p>
-            </div>
-        </div>
 
-        <div class="space-y-2">
-            <p class="text-sm font-medium text-gray-900">¿Autorizas que tu fotografía aparezca en el directorio de egresados de la MIED?</p>
-            <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="visibilidadFoto" class="text-[#003366] focus:ring-[#003366]" checked />
-                <span class="text-sm text-gray-700">Sí, autorizo su visualización en el directorio.</span>
-            </label>
-            <label class="flex items-center space-x-2 cursor-pointer">
-                <input type="radio" name="visibilidadFoto" class="text-[#003366] focus:ring-[#003366]" />
-                <span class="text-sm text-gray-700">No, deseo que mi fotografía sea visible únicamente para mí y el personal autorizado.</span>
-            </label>
-        </div>
+@if (cargando)
+{
+    <div class="flex justify-content-center align-items-center min-h-[400px]">
+        <p class="text-gray-500">Cargando información del perfil...</p>
     </div>
-    <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h2 class="text-lg font-bold text-gray-900 mb-4">Datos personales y de contacto</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div class="col-span-1 md:col-span-2">
-                <label class="block text-xs text-gray-500 mb-1">Nombre(s)</label>
-                <input type="text" value="Sebastián" class="w-full border border-gray-200 rounded-md p-2 text-sm text-gray-900 bg-gray-50" readonly />
+}
+else
+{
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">Información general</h1>
+        <p class="text-gray-500">Configura tu foto de perfil, datos personales básicos y perfiles académicos.</p>
+    </div>
+
+    <div class="space-y-6">
+        <!-- Fotografia de perfil-->
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Fotografía de perfil</h2>
+            <div class="flex items-center space-x-6 mb-6">
+                <!-- INICIALES, CAMBIAR PROXIMAMENTE-->
+                <div class="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center border border-gray-300 text-2xl font-bold text-gray-400">
+                    SM  
+                </div>
+                <div class="flex flex-col space-y-2">
+                    <div class="flex space-x-3">
+                        <button class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">Seleccionar archivo</button>
+                        <button class="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-700">Eliminar</button>
+                    </div>
+                    <p class="text-xs text-gray-500">Formatos permitidos: JPG, PNG.<br />Tamaño máximo: 5 MB.</p>
+                </div>
             </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Apellido paterno</label>
-                <input type="text" value="Martínez" class="w-full border border-gray-200 rounded-md p-2 text-sm text-gray-900 bg-gray-50" readonly />
-            </div>
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Apellido materno</label>
-                <input type="text" value="Soqui" class="w-full border border-gray-200 rounded-md p-2 text-sm text-gray-900 bg-gray-50" readonly />
-            </div>
-            <!-- ... (Resto de los inputs de contacto que teníamos) ... -->
-            <div>
-                <label class="block text-xs text-gray-500 mb-1">Teléfono de contacto</label>
-                <input type="text" value="644 123 4567" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+
+            <div class="space-y-2">
+                <p class="text-sm font-medium text-gray-900">¿Autorizas que tu fotografía aparezca en el directorio de egresados de la MIED?</p>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="visibilidadFoto" class="text-[#003366] focus:ring-[#003366]" checked />
+                    <span class="text-sm text-gray-700">Sí, autorizo su visualización en el directorio.</span>
+                </label>
+                <label class="flex items-center space-x-2 cursor-pointer">
+                    <input type="radio" name="visibilidadFoto" class="text-[#003366] focus:ring-[#003366]" />
+                    <span class="text-sm text-gray-700">No, deseo que mi fotografía sea visible únicamente para mí y el personal autorizado.</span>
+                </label>
             </div>
         </div>
 
-        <!-- Sección de datos de programa específicos -->
-        <div class="bg-[#f8fbff] border border-blue-100 rounded-lg p-4 mb-6">
-            <div class="flex justify-between items-start mb-2">
+        <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h2 class="text-lg font-bold text-gray-900 mb-4">Datos personales y de contacto</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <div class="col-span-1 md:col-span-2">
+                    <label class="block text-xs text-gray-500 mb-1">Nombre(s)</label>
+                    <input type="text" @bind="egresado.Nombres" class="w-full border border-gray-200 rounded-md p-2 text-sm text-gray-900 bg-gray-50" readonly />
+                </div>
                 <div>
-                    <h3 class="text-sm font-bold text-gray-900">Generación de la MIED</h3>
-                    <p class="text-xs text-gray-500">Información requerida por la coordinación de tu programa educativo.</p>
+                    <label class="block text-xs text-gray-500 mb-1">Apellido paterno</label>
+                    <input type="text" @bind="egresado.ApellidoPaterno" class="w-full border border-gray-200 rounded-md p-2 text-sm text-gray-900 bg-gray-50" readonly />
                 </div>
-                <span class="bg-blue-100 text-[#003366] text-[10px] font-bold px-2 py-1 rounded">DATO DEL PROGRAMA</span>
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Apellido materno</label>
+                    <input type="text" @bind="egresado.ApellidoMaterno" class="w-full border border-gray-200 rounded-md p-2 text-sm text-gray-900 bg-gray-50" readonly />
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-500 mb-1">Teléfono de contacto</label>
+                    <input type="text" maxlength="10" oninput="this.value=this.value.replace(/[^0-9]/g,'');" @bind="egresado.Telefono" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                </div>
             </div>
-            <div class="w-full md:w-1/2 mt-3">
-                <select class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
-                    <option>VI 2024-2026</option>
-                </select>
+
+            <!-- Sección de datos de programa específicos -->
+            <div class="bg-[#f8fbff] border border-blue-100 rounded-lg p-4 mb-6">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-900">Generación de la MIED</h3>
+                        <p class="text-xs text-gray-500">Información requerida por la coordinación de tu programa educativo.</p>
+                    </div>
+                    <span class="bg-blue-100 text-[#003366] text-[10px] font-bold px-2 py-1 rounded">DATO DEL PROGRAMA</span>
+                </div>
+                <div class="w-full md:w-1/2 mt-3">
+                    <select class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                        <option>VI 2024-2026</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-sm font-bold text-gray-900 mb-3">Residencia actual</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">País</label>
+                        <select @bind="egresado.Pais" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                            <option value="">Seleccione...</option>
+                            <option value="México">México</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Estado</label>
+                        <select @bind="egresado.Estado" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                            <option value="">Seleccione...</option>
+                            <option value="Sonora">Sonora</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Ciudad</label>
+                        <select @bind="egresado.Ciudad" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
+                            <option value="">Seleccione...</option>
+                            <option value="Ciudad Obregón">Ciudad Obregón</option>
+                            <option value="Hermosillo">Hermosillo</option>
+                            <option value="Heroica Nogales">Heroica Nogales</option>
+                            <option value="Navojoa">Navojoa</option>
+                            <option value="Guaymas">Guaymas</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <!-- Perfiles y Redes Académicas -->
+            <div>
+                <h3 class="text-sm font-bold text-gray-900 mb-1">Perfiles y redes académicas (opcionales)</h3>
+                <p class="text-xs text-gray-500 mb-4">Registra enlaces o identificadores a tus perfiles profesionales disponibles.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4"> 
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">ORCID</label>
+                        <input type="text" @bind="egresado.PerfilAcademico.Orcid" placeholder="Identificador o URL" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Google Scholar</label>
+                        <input type="text" @bind="egresado.PerfilAcademico.GoogleScholar" placeholder="URL del perfil" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">ResearchGate</label>
+                        <input type="text" @bind="egresado.PerfilAcademico.ResearchGate" placeholder="URL del perfil" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Academia.edu</label>
+                        <input type="text" @bind="egresado.PerfilAcademico.AcademiaEdu" placeholder="URL del perfil" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">Scopus Author ID</label>
+                        <input type="text" @bind="egresado.PerfilAcademico.ScopusId" placeholder="Identificador o URL" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1">LinkedIn</label>
+                        <input type="text" @bind="egresado.PerfilAcademico.LinkedIn" placeholder="URL de red" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                    </div>
+                </div>
             </div>
         </div>
 
+        <div class="flex justify-end">
+            <button @onclick="GuardarPerfil" class="px-6 py-2 bg-[#003366] text-white font-medium rounded-md hover:bg-[#002244] shadow-sm">
+                Guardar cambios
+            </button>
+        </div>
     </div>
 
-    <div class="flex justify-end">
-        <button class="px-6 py-2 bg-[#003366] text-white font-medium rounded-md hover:bg-[#002244] shadow-sm">
-            Guardar cambios
-        </button>
-    </div>
-</div>
+
+
+    @if (!string.IsNullOrEmpty(mensajeNotificacion))
+    {
+        <div class="fixed bottom-6 right-6 bg-white text-slate-800 px-5 py-3 rounded-md shadow-lg border border-slate-100 flex items-center z-50 transform transition-all duration-300">
+            <svg class="w-5 h-5 mr-3 text-[#03126B]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span class="text-sm font-normal tracking-wide">@mensajeNotificacion</span>
+        </div>
+    }
+}
+
 
 
 @code {
+
+    public bool cargando = true;
+    private Egresado egresado = new Egresado();
+    private string? mensajeNotificacion = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var userIdString = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdString, out int userId))
+            {
+                var egresadoDb = await EgresadoService.ObtenerPorUsuarioIdAsync(userId);
+                if (egresadoDb != null)
+                {
+                    egresado = egresadoDb;
+                }
+            }
+
+
+        }
+        cargando = false; 
+
+    }
+
+    private async Task GuardarPerfil()
+    {
+        await EgresadoService.ActualizarAsync(egresado);
+        mensajeNotificacion = "Tus datos de guardaron exitosamente.";
+        StateHasChanged();
+        await Task.Delay(3000);
+        mensajeNotificacion = null;
+        StateHasChanged();
+
+
+    }
 
 }
