@@ -112,6 +112,10 @@ namespace Follower.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("varchar(255)");
 
+                    b.Property<string>("Matricula")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
                     b.Property<int>("IdPrograma")
                         .HasColumnType("int");
 

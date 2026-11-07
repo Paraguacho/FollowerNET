@@ -1,0 +1,251 @@
+﻿@page "/responsable"
+@attribute [Authorize(Roles = "ResponsablePrograma")]
+@using System.Globalization
+@using System.Security.Claims
+@using System.Text
+@using Follower.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject Follower.Data.ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavigationManager
+
+<div class="min-h-screen bg-gray-50 font-sans">
+    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div class="mb-8">
+            <p class="text-sm font-semibold uppercase tracking-wider text-[#003366]">Gestión de egresados</p>
+            <h1 class="mt-1 text-3xl font-bold text-gray-900">Buscar egresados</h1>
+            <p class="mt-2 text-sm text-gray-500">Consulta los perfiles autorizados de tu programa educativo.</p>
+        </div>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">@error</div>
+        }
+        else if (cargando)
+        {
+            <div class="rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-500">Cargando egresados...</div>
+        }
+        else
+        {
+            <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex flex-col gap-3 xl:flex-row xl:items-center">
+                    <div class="relative flex-1">
+                        <svg class="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z" />
+                        </svg>
+                        <input value="@terminoBusqueda" @oninput="CambiarBusqueda" @onkeydown="ManejarTecla"
+                               class="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-10 text-sm text-gray-900 outline-none transition focus:border-[#003366] focus:ring-2 focus:ring-blue-100"
+                               placeholder="Buscar por nombre, apellidos o matrícula..." aria-label="Buscar egresados" />
+                        @if (!string.IsNullOrWhiteSpace(terminoBusqueda))
+                        {
+                            <button type="button" @onclick="LimpiarBusqueda" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700" aria-label="Limpiar búsqueda">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m6 6 12 12M18 6 6 18" /></svg>
+                            </button>
+                        }
+                    </div>
+                    <button type="button" @onclick="AplicarBusqueda" class="rounded-lg bg-[#003366] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#002244]">Buscar</button>
+                    <button type="button" class="flex items-center justify-center gap-2 rounded-lg border border-gray-300 px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm0-12v2m0 13v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" /></svg>
+                        Filtros
+                    </button>
+                    <label class="flex cursor-pointer items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                        <input type="checkbox" @bind="soloDesactualizados" @bind:after="AplicarBusqueda" class="h-4 w-4 accent-red-600" />
+                        Perfiles desactualizados (&gt; 12 meses)
+                    </label>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(terminoBusqueda))
+                {
+                    <div class="mt-4 flex items-center gap-2 text-sm text-gray-500">
+                        <span>Búsqueda activa</span>
+                        <button type="button" @onclick="LimpiarBusqueda" class="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 font-medium text-[#003366]">
+                            Texto: @terminoBusqueda
+                            <span aria-hidden="true">×</span>
+                        </button>
+                    </div>
+                }
+            </section>
+
+            <section class="mt-6">
+                @if (resultadosFiltrados.Count == 0)
+                {
+                    <div class="rounded-xl border border-gray-200 bg-gray-100 px-6 py-16 text-center">
+                        <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-gray-400">
+                            <svg class="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-5.5-2.5 3 3m0-3-3 3" /></svg>
+                        </div>
+                        <h2 class="mt-5 text-lg font-bold text-gray-900">No se encontraron egresados que coincidan con la búsqueda</h2>
+                        <p class="mx-auto mt-2 max-w-xl text-sm text-gray-500">No hay coincidencias con «@terminoBusqueda» en @SiglasPrograma. Revisa el texto, prueba con una parte del nombre o utiliza la matrícula.</p>
+                        <button type="button" @onclick="LimpiarBusqueda" class="mt-6 rounded-lg bg-[#003366] px-5 py-3 text-sm font-semibold text-white hover:bg-[#002244]">× Limpiar búsqueda</button>
+                        <p class="mt-3 text-xs text-gray-500">Se mostrarán todos los egresados de tu programa autorizado.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="mb-4">
+                        <h2 class="text-xl font-bold text-gray-900">Mostrando @resultadosFiltrados.Count resultados</h2>
+                        <p class="mt-1 text-sm text-gray-500">@(string.IsNullOrWhiteSpace(terminoBusqueda) ? "Todos los egresados" : $"Coincidencias con «{terminoBusqueda}»") • Más recientes primero • Todos los perfiles pertenecen a @SiglasPrograma.</p>
+                    </div>
+                    <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPor(nameof(Egresado.Nombres))">NOMBRE COMPLETO ↕</button></th>
+                                        <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPor(nameof(Egresado.FechaEgreso))">GENERACIÓN / AÑO DE TITULACIÓN ↕</button></th>
+                                        <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPor(nameof(SituacionLaboral.EstadoActual))">SITUACIÓN LABORAL ACTUAL ↕</button></th>
+                                        <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPor(nameof(Egresado.FechaUltimaActualizacion))">FECHA DE ÚLTIMA ACTUALIZACIÓN ↓</button></th>
+                                        <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500">ACCIÓN</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    @foreach (var egresado in resultadosPagina)
+                                    {
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="whitespace-nowrap px-5 py-4"><div class="font-semibold text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div><div class="text-xs text-gray-500">Matrícula: @(egresado.Matricula ?? egresado.IdEgresado.ToString())</div></td>
+                                            <td class="px-5 py-4 text-sm text-gray-700">@(egresado.FechaEgreso?.ToString() ?? "Sin registro")</td>
+                                            <td class="px-5 py-4 text-sm text-gray-700">@(egresado.SituacionLaboral?.EstadoActual ?? "Sin registro")</td>
+                                            <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700">@egresado.FechaUltimaActualizacion.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture)</td>
+                                            <td class="px-5 py-4"><a href="/perfil" class="text-sm font-semibold text-[#003366] hover:underline">Ver perfil &gt;</a></td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="flex flex-col gap-4 border-t border-gray-200 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+                            <span>@((paginaActual - 1) * registrosPorPagina + 1)-@Math.Min(paginaActual * registrosPorPagina, resultadosFiltrados.Count) de @resultadosFiltrados.Count resultados</span>
+                            <div class="flex items-center gap-4">
+                                <label>Registros por página <select @bind="registrosPorPagina" @bind:after="CambiarRegistrosPorPagina" class="ml-2 rounded border border-gray-300 px-2 py-1"><option value="10">10</option><option value="25">25</option><option value="50">50</option></select></label>
+                                <div class="flex items-center gap-2"><button @onclick="PaginaAnterior" disabled="@(paginaActual == 1)" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-40">&lt;</button><span>@paginaActual</span><button @onclick="PaginaSiguiente" disabled="@(paginaActual >= TotalPaginas)" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-40">&gt;</button></div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </section>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Egresado> todosLosEgresados = new();
+    private List<Egresado> resultadosFiltrados = new();
+    private List<Egresado> resultadosPagina = new();
+    private string terminoBusqueda = string.Empty;
+    private string? error;
+    private string siglasPrograma = "MIED";
+    private bool cargando = true;
+    private bool soloDesactualizados;
+    private int paginaActual = 1;
+    private int registrosPorPagina = 10;
+    private string campoOrden = nameof(Egresado.FechaUltimaActualizacion);
+    private bool ordenAscendente;
+
+    private string SiglasPrograma => string.IsNullOrWhiteSpace(siglasPrograma) ? "MIED" : siglasPrograma;
+    private int TotalPaginas => Math.Max(1, (int)Math.Ceiling(resultadosFiltrados.Count / (double)registrosPorPagina));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var claim = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        if (!int.TryParse(claim, out var usuarioId))
+        {
+            error = "No se pudo identificar la sesión activa.";
+            cargando = false;
+            return;
+        }
+
+        var asignaciones = await DbContext.ProgramasResponsables
+            .AsNoTracking()
+            .Include(x => x.ProgramaEducativo)
+            .Where(x => x.IdUsuario == usuarioId)
+            .ToListAsync();
+        if (asignaciones.Count == 0)
+        {
+            error = "No tienes un programa educativo autorizado.";
+            cargando = false;
+            return;
+        }
+
+        var idsProgramasAutorizados = asignaciones.Select(x => x.IdPrograma).ToList();
+        siglasPrograma = string.Join(", ", asignaciones.Select(x => x.ProgramaEducativo.Siglas).Distinct());
+        todosLosEgresados = await DbContext.Egresados
+            .AsNoTracking()
+            .Include(x => x.SituacionLaboral)
+            .Where(x => idsProgramasAutorizados.Contains(x.IdPrograma) && x.EstadoSolicitud == "Aprobado")
+            .OrderByDescending(x => x.FechaUltimaActualizacion)
+            .ToListAsync();
+        AplicarBusqueda();
+        cargando = false;
+    }
+
+    private void CambiarBusqueda(ChangeEventArgs args)
+    {
+        terminoBusqueda = args.Value?.ToString() ?? string.Empty;
+        AplicarBusqueda();
+    }
+
+    private void ManejarTecla(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            AplicarBusqueda();
+        }
+    }
+
+    private void AplicarBusqueda()
+    {
+        var texto = Normalizar(terminoBusqueda);
+        var limite = DateTime.UtcNow.AddMonths(-12);
+        resultadosFiltrados = todosLosEgresados
+            .Where(e => (!soloDesactualizados || e.FechaUltimaActualizacion < limite)
+                && (string.IsNullOrEmpty(texto)
+                    || Normalizar($"{e.Nombres} {e.ApellidoPaterno} {e.ApellidoMaterno}").Contains(texto)
+                    || Normalizar(e.Matricula).Contains(texto)
+                    || e.IdEgresado.ToString(CultureInfo.InvariantCulture).Contains(texto)))
+            .ToList();
+        OrdenarResultados();
+        paginaActual = Math.Min(paginaActual, TotalPaginas);
+        ActualizarPagina();
+    }
+
+    private void LimpiarBusqueda()
+    {
+        terminoBusqueda = string.Empty;
+        AplicarBusqueda();
+    }
+
+    private void OrdenarPor(string campo)
+    {
+        if (campoOrden == campo) ordenAscendente = !ordenAscendente;
+        else { campoOrden = campo; ordenAscendente = true; }
+        OrdenarResultados();
+        ActualizarPagina();
+    }
+
+    private void OrdenarResultados()
+    {
+        resultadosFiltrados = campoOrden switch
+        {
+            nameof(Egresado.Nombres) => (ordenAscendente ? resultadosFiltrados.OrderBy(e => $"{e.Nombres} {e.ApellidoPaterno}") : resultadosFiltrados.OrderByDescending(e => $"{e.Nombres} {e.ApellidoPaterno}")).ToList(),
+            nameof(Egresado.FechaEgreso) => (ordenAscendente ? resultadosFiltrados.OrderBy(e => e.FechaEgreso) : resultadosFiltrados.OrderByDescending(e => e.FechaEgreso)).ToList(),
+            nameof(SituacionLaboral.EstadoActual) => (ordenAscendente ? resultadosFiltrados.OrderBy(e => e.SituacionLaboral?.EstadoActual) : resultadosFiltrados.OrderByDescending(e => e.SituacionLaboral?.EstadoActual)).ToList(),
+            _ => (ordenAscendente ? resultadosFiltrados.OrderBy(e => e.FechaUltimaActualizacion) : resultadosFiltrados.OrderByDescending(e => e.FechaUltimaActualizacion)).ToList()
+        };
+    }
+
+    private void ActualizarPagina() => resultadosPagina = resultadosFiltrados.Skip((paginaActual - 1) * registrosPorPagina).Take(registrosPorPagina).ToList();
+    private void CambiarRegistrosPorPagina() { paginaActual = 1; ActualizarPagina(); }
+    private void PaginaAnterior() { if (paginaActual > 1) { paginaActual--; ActualizarPagina(); } }
+    private void PaginaSiguiente() { if (paginaActual < TotalPaginas) { paginaActual++; ActualizarPagina(); } }
+
+    private static string Normalizar(string? valor)
+    {
+        if (string.IsNullOrWhiteSpace(valor)) return string.Empty;
+        var formD = valor.Normalize(NormalizationForm.FormD);
+        var builder = new StringBuilder();
+        foreach (var caracter in formD)
+            if (CharUnicodeInfo.GetUnicodeCategory(caracter) != UnicodeCategory.NonSpacingMark) builder.Append(caracter);
+        return builder.ToString().Normalize(NormalizationForm.FormC).ToLowerInvariant();
+    }
+}
