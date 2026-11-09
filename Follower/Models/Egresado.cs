@@ -40,9 +40,6 @@ namespace Follower.Models
         [MaxLength(100)]
         public string ApellidoMaterno { get; set; } = string.Empty;
 
-        [MaxLength(50)]
-        public string? Matricula { get; set; }
-
         [MaxLength(20)]
         public string? Telefono { get; set; } 
         

@@ -1,4 +1,4 @@
-﻿@page "/responsable"
+﻿@page "/responsable/egresados"
 @attribute [Authorize(Roles = "ResponsablePrograma")]
 @using System.Globalization
 @using System.Security.Claims
@@ -37,7 +37,7 @@
                         </svg>
                         <input value="@terminoBusqueda" @oninput="CambiarBusqueda" @onkeydown="ManejarTecla"
                                class="w-full rounded-lg border border-gray-300 py-3 pl-10 pr-10 text-sm text-gray-900 outline-none transition focus:border-[#003366] focus:ring-2 focus:ring-blue-100"
-                               placeholder="Buscar por nombre, apellidos o matrícula..." aria-label="Buscar egresados" />
+                               placeholder="Buscar por nombre o apellidos..." aria-label="Buscar egresados" />
                         @if (!string.IsNullOrWhiteSpace(terminoBusqueda))
                         {
                             <button type="button" @onclick="LimpiarBusqueda" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700" aria-label="Limpiar búsqueda">
@@ -76,7 +76,7 @@
                             <svg class="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-5.5-2.5 3 3m0-3-3 3" /></svg>
                         </div>
                         <h2 class="mt-5 text-lg font-bold text-gray-900">No se encontraron egresados que coincidan con la búsqueda</h2>
-                        <p class="mx-auto mt-2 max-w-xl text-sm text-gray-500">No hay coincidencias con «@terminoBusqueda» en @SiglasPrograma. Revisa el texto, prueba con una parte del nombre o utiliza la matrícula.</p>
+                        <p class="mx-auto mt-2 max-w-xl text-sm text-gray-500">No hay coincidencias con «@terminoBusqueda» en @SiglasPrograma. Revisa el texto o prueba con una parte del nombre.</p>
                         <button type="button" @onclick="LimpiarBusqueda" class="mt-6 rounded-lg bg-[#003366] px-5 py-3 text-sm font-semibold text-white hover:bg-[#002244]">× Limpiar búsqueda</button>
                         <p class="mt-3 text-xs text-gray-500">Se mostrarán todos los egresados de tu programa autorizado.</p>
                     </div>
@@ -103,7 +103,7 @@
                                     @foreach (var egresado in resultadosPagina)
                                     {
                                         <tr class="hover:bg-gray-50">
-                                            <td class="whitespace-nowrap px-5 py-4"><div class="font-semibold text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div><div class="text-xs text-gray-500">Matrícula: @(egresado.Matricula ?? egresado.IdEgresado.ToString())</div></td>
+                                            <td class="whitespace-nowrap px-5 py-4"><div class="font-semibold text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div></td>
                                             <td class="px-5 py-4 text-sm text-gray-700">@(egresado.FechaEgreso?.ToString() ?? "Sin registro")</td>
                                             <td class="px-5 py-4 text-sm text-gray-700">@(egresado.SituacionLaboral?.EstadoActual ?? "Sin registro")</td>
                                             <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700">@egresado.FechaUltimaActualizacion.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture)</td>
@@ -200,9 +200,7 @@
         resultadosFiltrados = todosLosEgresados
             .Where(e => (!soloDesactualizados || e.FechaUltimaActualizacion < limite)
                 && (string.IsNullOrEmpty(texto)
-                    || Normalizar($"{e.Nombres} {e.ApellidoPaterno} {e.ApellidoMaterno}").Contains(texto)
-                    || Normalizar(e.Matricula).Contains(texto)
-                    || e.IdEgresado.ToString(CultureInfo.InvariantCulture).Contains(texto)))
+                    || Normalizar($"{e.Nombres} {e.ApellidoPaterno} {e.ApellidoMaterno}").Contains(texto)))
             .ToList();
         OrdenarResultados();
         paginaActual = Math.Min(paginaActual, TotalPaginas);
