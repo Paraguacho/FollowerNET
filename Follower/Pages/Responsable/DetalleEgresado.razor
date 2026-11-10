@@ -1,0 +1,538 @@
+@page "/responsable/egresado/{IdEgresado:int}"
+@attribute [Authorize(Roles = "ResponsablePrograma")]
+@using System.Security.Claims
+@using Follower.Models
+@using Follower.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
+@using Microsoft.EntityFrameworkCore
+@inject Follower.Data.ApplicationDbContext DbContext
+@inject IEvidenciaPdfService EvidenciaPdfService
+@inject IJSRuntime JS
+
+<div class="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-6xl">
+        <div class="mb-5 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <a href="/responsable" class="text-sm text-[#003366] hover:underline">Egresados</a>
+                <span class="mx-2 text-gray-400">/</span>
+                <span class="text-sm text-gray-600">Detalle de egresado</span>
+                <h1 class="mt-3 text-2xl font-bold text-gray-900">Detalle de egresado</h1>
+                <p class="mt-1 text-sm text-gray-500">Consulta de información compartida por la persona egresada.</p>
+            </div>
+            @if (egresado is not null)
+            {
+                <button @onclick="DescargarCv"
+                        disabled="@descargandoCv"
+                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-[#003366] px-4 py-2.5 text-sm font-medium text-[#003366] hover:bg-blue-50 disabled:cursor-wait disabled:opacity-60">
+                    <span aria-hidden="true">↓</span>
+                    @(descargandoCv ? "Generando CV..." : "Descargar CV (PDF)")
+                </button>
+            }
+        </div>
+
+        @if (cargando)
+        {
+            <div class="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">Cargando perfil...</div>
+        }
+        else if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">@error</div>
+        }
+        else if (egresado is not null)
+        {
+            <div class="mb-5 flex items-center gap-3 rounded-md border-l-4 border-[#003366] bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                <span><strong>Solo lectura.</strong> Esta información fue compartida por la persona egresada y no puede modificarse desde esta vista.</span>
+            </div>
+
+            <section class="mb-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div class="flex items-center gap-4">
+                        @if (!string.IsNullOrWhiteSpace(egresado.FotoPerfilUrl))
+                        {
+                            <img src="@egresado.FotoPerfilUrl" alt="Fotografía de @NombreCompleto" class="h-16 w-16 rounded-full object-cover" />
+                        }
+                        else
+                        {
+                            <div class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-blue-50 text-lg font-bold text-[#003366]">@Iniciales</div>
+                        }
+                        <div>
+                            <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Perfil de egresado · @egresado.ProgramaEducativo?.Siglas</p>
+                            <h2 class="mt-1 text-xl font-bold text-gray-900">@NombreCompleto</h2>
+                            <p class="mt-1 text-sm text-gray-600">@egresado.ProgramaEducativo?.NombrePrograma</p>
+                            <p class="mt-1 text-xs text-gray-500">Actualizado el @egresado.FechaUltimaActualizacion.ToString("dd MMM yyyy")</p>
+                        </div>
+                    </div>
+                    <span class="w-fit rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">Solo lectura</span>
+                </div>
+            </section>
+
+            <nav aria-label="Secciones del perfil" class="mb-4 flex flex-wrap gap-1 rounded-xl border border-gray-200 bg-white p-2 text-sm">
+                <a href="#informacion-general" class="rounded-md px-3 py-2 text-[#003366] hover:bg-blue-50">Información general</a>
+                <a href="#trayectoria" class="rounded-md px-3 py-2 text-[#003366] hover:bg-blue-50">Trayectoria</a>
+                <a href="#productividad" class="rounded-md px-3 py-2 text-[#003366] hover:bg-blue-50">Productividad y reconocimientos</a>
+                <a href="#vinculacion" class="rounded-md px-3 py-2 text-[#003366] hover:bg-blue-50">Vinculación</a>
+                <a href="#modulos-mied" class="rounded-md px-3 py-2 text-[#003366] hover:bg-blue-50">Respuestas MIED</a>
+                <a href="#evidencias" class="rounded-md px-3 py-2 text-[#003366] hover:bg-blue-50">Evidencias</a>
+            </nav>
+
+            <section id="informacion-general" class="mb-4 scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Perfil</p>
+                <h2 class="mt-1 text-lg font-bold text-gray-900">Información general</h2>
+                <dl class="mt-5 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                    <div><dt class="text-xs text-gray-500">Nombre completo</dt><dd class="mt-1 text-sm font-medium text-gray-900">@NombreCompleto</dd></div>
+                    <div><dt class="text-xs text-gray-500">Correo electrónico</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@(egresado.Usuario?.Correo ?? "No especificado")</dd></div>
+                    <div><dt class="text-xs text-gray-500">Teléfono</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Telefono)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Programa</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.ProgramaEducativo?.NombrePrograma)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Generación / año de egreso</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.FechaEgreso?.ToString() ?? "No especificado")</dd></div>
+                    <div><dt class="text-xs text-gray-500">Situación laboral actual</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.SituacionLaboral?.EstadoActual)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Ciudad de residencia</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Ciudad)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Estado</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Estado)</dd></div>
+                    <div><dt class="text-xs text-gray-500">País</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Pais)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Fecha de nacimiento</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.FechaNacimiento?.ToString("dd MMM yyyy") ?? "No especificada")</dd></div>
+                    <div><dt class="text-xs text-gray-500">LinkedIn</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.LinkedIn)</dd></div>
+                    <div><dt class="text-xs text-gray-500">ORCID</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.Orcid)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Google Scholar</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.GoogleScholar)</dd></div>
+                    <div><dt class="text-xs text-gray-500">ResearchGate</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.ResearchGate)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Academia.edu</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.AcademiaEdu)</dd></div>
+                    <div><dt class="text-xs text-gray-500">Scopus ID</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.ScopusId)</dd></div>
+                </dl>
+            </section>
+
+            <section id="trayectoria" class="mb-4 scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Experiencia y formación</p>
+                <h2 class="mt-1 text-lg font-bold text-gray-900">Trayectoria</h2>
+                <div class="mt-5 grid grid-cols-1 gap-8 md:grid-cols-2">
+                    <div>
+                        <h3 class="mb-4 text-sm font-semibold text-gray-900">Experiencia laboral</h3>
+                        @if (egresado.ExperienciasLaborales.Count == 0)
+                        {
+                            <p class="text-sm text-gray-500">No hay experiencias laborales registradas.</p>
+                        }
+                        else
+                        {
+                            <ol class="space-y-5 border-l border-gray-200 pl-4">
+                                @foreach (var empleo in egresado.ExperienciasLaborales.OrderBy(item => item.FechaInicio).ThenBy(item => item.FechaFin))
+                                {
+                                    <li @key="empleo.IdExperienciaLaboral" class="relative">
+                                        <span class="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#003366]"></span>
+                                        <p class="text-sm font-semibold text-gray-900">@Valor(empleo.Puesto)</p>
+                                        <p class="mt-1 text-sm text-gray-700">@Valor(empleo.Institucion)@(string.IsNullOrWhiteSpace(empleo.Sector) ? "" : $" · {empleo.Sector}")</p>
+                                        <p class="mt-1 text-xs text-gray-500">@RangoFechas(empleo.FechaInicio, empleo.FechaFin, empleo.EsEmpleoActual)</p>
+                                        @if (!string.IsNullOrWhiteSpace(empleo.ActividadesPrincipales))
+                                        {
+                                            <p class="mt-2 whitespace-pre-line text-sm text-gray-600">@empleo.ActividadesPrincipales</p>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(empleo.NivelEducativo) || !string.IsNullOrWhiteSpace(empleo.RelacionConFormacion))
+                                        {
+                                            <p class="mt-2 text-xs text-gray-500">
+                                                @if (!string.IsNullOrWhiteSpace(empleo.NivelEducativo))
+                                                {
+                                                    <span>Nivel educativo: @empleo.NivelEducativo</span>
+                                                }
+                                                @if (!string.IsNullOrWhiteSpace(empleo.RelacionConFormacion))
+                                                {
+                                                    <span> · Relación con la formación: @empleo.RelacionConFormacion</span>
+                                                }
+                                            </p>
+                                        }
+                                    </li>
+                                }
+                            </ol>
+                        }
+                    </div>
+                    <div>
+                        <h3 class="mb-4 text-sm font-semibold text-gray-900">Formación académica</h3>
+                        @if (egresado.FormacionesAcademicas.Count == 0)
+                        {
+                            <p class="text-sm text-gray-500">No hay estudios registrados.</p>
+                        }
+                        else
+                        {
+                            <ol class="space-y-5 border-l border-gray-200 pl-4">
+                                @foreach (var estudio in egresado.FormacionesAcademicas.OrderBy(item => item.FechaInicio).ThenBy(item => item.FechaFin))
+                                {
+                                    <li @key="estudio.IdFormacionAcademica" class="relative">
+                                        <span class="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#003366]"></span>
+                                        <p class="text-sm font-semibold text-gray-900">@Valor(estudio.NombrePrograma)</p>
+                                        <p class="mt-1 text-sm text-gray-700">@Valor(estudio.Grado)@(string.IsNullOrWhiteSpace(estudio.Institucion) ? "" : $" · {estudio.Institucion}")</p>
+                                        <p class="mt-1 text-xs text-gray-500">@RangoFechas(estudio.FechaInicio, estudio.FechaFin, estudio.EsFormacionActual)</p>
+                                        @if (!string.IsNullOrWhiteSpace(estudio.EstadoPrograma) || !string.IsNullOrWhiteSpace(estudio.Pais))
+                                        {
+                                            <p class="mt-1 text-xs text-gray-500">@Valor(estudio.EstadoPrograma)@(string.IsNullOrWhiteSpace(estudio.Pais) ? "" : $" · {estudio.Pais}")</p>
+                                        }
+                                        @if (estudio.RecibioBeca)
+                                        {
+                                            <p class="mt-1 text-xs text-gray-500">Beca / apoyo: @Valor(estudio.TipoApoyo)@(string.IsNullOrWhiteSpace(estudio.InstitucionOtorgante) ? "" : $" · {estudio.InstitucionOtorgante}")</p>
+                                        }
+                                    </li>
+                                }
+                            </ol>
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <section id="productividad" class="mb-4 scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Aportaciones</p>
+                <h2 class="mt-1 text-lg font-bold text-gray-900">Productividad y reconocimientos</h2>
+                <div class="mt-4">
+                    @if (SeccionesCategoria("productividad").Any())
+                    {
+                        @foreach (var seccion in SeccionesCategoria("productividad"))
+                        {
+                            @SeccionRespuestas(seccion)
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-sm text-gray-500">No hay aportaciones o reconocimientos registrados.</p>
+                    }
+                </div>
+            </section>
+
+            <section id="vinculacion" class="mb-4 scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Comunidad</p>
+                <h2 class="mt-1 text-lg font-bold text-gray-900">Vinculación</h2>
+                <div class="mt-4">
+                    @if (SeccionesCategoria("vinculacion").Any())
+                    {
+                        @foreach (var seccion in SeccionesCategoria("vinculacion"))
+                        {
+                            @SeccionRespuestas(seccion)
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-sm text-gray-500">No hay actividades de vinculación registradas.</p>
+                    }
+                </div>
+            </section>
+
+            <section id="modulos-mied" class="mb-4 scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Módulos 6 y 8 · MIED</p>
+                <h2 class="mt-1 text-lg font-bold text-gray-900">Evaluación y retroalimentación</h2>
+                <div class="mt-4 space-y-5">
+                    @if (SeccionesPersonalizadas.Any())
+                    {
+                        @foreach (var seccion in SeccionesPersonalizadas)
+                        {
+                            @SeccionRespuestas(seccion)
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-sm text-gray-500">No hay respuestas personalizadas MIED registradas.</p>
+                    }
+                </div>
+            </section>
+
+            <section id="evidencias" class="mb-8 scroll-mt-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+                <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Documentos</p>
+                        <h2 class="mt-1 text-lg font-bold text-gray-900">Evidencias</h2>
+                    </div>
+                    <p class="text-xs text-gray-500">Archivos PDF compartidos</p>
+                </div>
+                @if (EvidenciasPdf.Any())
+                {
+                    <ul class="mt-4 divide-y divide-gray-100">
+                        @foreach (var evidencia in EvidenciasPdf)
+                        {
+                            <li @key="evidencia.Url" class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="min-w-0">
+                                    <p class="truncate text-sm font-semibold text-gray-900">@evidencia.Nombre</p>
+                                    <p class="mt-1 text-xs text-gray-500">@evidencia.Seccion · @evidencia.Campo</p>
+                                </div>
+                                <div class="flex shrink-0 gap-2">
+                                    <a href="@evidencia.Url" target="_blank" rel="noopener noreferrer"
+                                       class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Vista previa</a>
+                                    <a href="@evidencia.Url" download
+                                       class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Descargar</a>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                @if (archivosSubidos.Count > 0)
+                {
+                    <ul class="mt-4 divide-y divide-gray-100">
+                        @foreach (var archivo in archivosSubidos)
+                        {
+                            <li @key="archivo.Id" class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div class="min-w-0">
+                                    <p class="break-all text-sm font-semibold text-gray-900">@archivo.Nombre</p>
+                                    <p class="mt-1 text-xs text-gray-500">PDF · @($"{archivo.Tamano / 1024:N0} KB")</p>
+                                </div>
+                                <div class="flex shrink-0 gap-2">
+                                    <button @onclick="() => PrevisualizarArchivo(archivo)"
+                                            class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Vista previa</button>
+                                    <button @onclick="() => DescargarArchivo(archivo)"
+                                            class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Descargar</button>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+                @if (EvidenciasPdf.Count == 0 && archivosSubidos.Count == 0)
+                {
+                    <p class="mt-4 text-sm text-gray-500">No hay documentos PDF compartidos.</p>
+                }
+            </section>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int IdEgresado { get; set; }
+
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private Egresado? egresado;
+    private List<EvidenciaPdf> archivosSubidos = new();
+    private string? error;
+    private bool cargando = true;
+    private bool descargandoCv;
+
+    private string NombreCompleto => egresado is null
+        ? string.Empty
+        : $"{egresado.Nombres} {egresado.ApellidoPaterno} {egresado.ApellidoMaterno}".Trim();
+
+    private string Iniciales => egresado is null
+        ? string.Empty
+        : $"{egresado.Nombres.FirstOrDefault()}{egresado.ApellidoPaterno.FirstOrDefault()}".ToUpperInvariant();
+
+    private List<SeccionPersonalizada> SeccionesPersonalizadas => egresado?.ValoresCamposPersonalizados
+        .Where(valor => valor.CampoPersonalizado?.SeccionPersonalizada is not null)
+        .Select(valor => valor.CampoPersonalizado.SeccionPersonalizada)
+        .DistinctBy(seccion => seccion.IdSeccion)
+        .OrderBy(seccion => seccion.OrdenAparicion)
+        .ToList() ?? new();
+
+    private List<(string Nombre, string Seccion, string Campo, string Url)> EvidenciasPdf =>
+        egresado?.ValoresCamposPersonalizados
+            .Where(valor => TryGetPdfUrl(valor.ValorCapturado, out _))
+            .Select(valor =>
+            {
+                TryGetPdfUrl(valor.ValorCapturado, out var url);
+                var nombre = Uri.UnescapeDataString(Path.GetFileName(url.AbsolutePath));
+                if (string.IsNullOrWhiteSpace(nombre))
+                {
+                    nombre = valor.CampoPersonalizado.NombreEtiqueta;
+                }
+
+                return (nombre, valor.CampoPersonalizado.SeccionPersonalizada.TituloSeccion,
+                    valor.CampoPersonalizado.NombreEtiqueta, url.ToString());
+            })
+            .ToList() ?? new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        cargando = true;
+        error = null;
+        egresado = null;
+
+        try
+        {
+            var user = (await AuthStateTask).User;
+            if (!int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var idResponsable))
+            {
+                error = "No fue posible identificar la sesión del responsable.";
+                return;
+            }
+
+            var idPrograma = await DbContext.ProgramasResponsables
+                .Where(asignacion => asignacion.IdUsuario == idResponsable)
+                .Select(asignacion => (int?)asignacion.IdPrograma)
+                .FirstOrDefaultAsync();
+
+            if (idPrograma is null)
+            {
+                error = "No tienes un programa educativo asignado.";
+                return;
+            }
+
+            egresado = await DbContext.Egresados
+                .AsNoTracking()
+                .AsSplitQuery()
+                .Include(item => item.Usuario)
+                .Include(item => item.ProgramaEducativo)
+                .Include(item => item.PerfilAcademico)
+                .Include(item => item.SituacionLaboral)
+                .Include(item => item.ExperienciasLaborales)
+                .Include(item => item.FormacionesAcademicas)
+                .Include(item => item.ValoresCamposPersonalizados)
+                    .ThenInclude(valor => valor.CampoPersonalizado)
+                    .ThenInclude(campo => campo.SeccionPersonalizada)
+                .FirstOrDefaultAsync(item => item.IdEgresado == IdEgresado
+                    && item.IdPrograma == idPrograma
+                    && item.EstadoSolicitud == "Aprobado");
+
+            if (egresado is null)
+            {
+                error = "El perfil solicitado no existe o no pertenece a tu programa educativo.";
+                return;
+            }
+
+            archivosSubidos.AddRange(await EvidenciaPdfService.ListarAsync(egresado.IdEgresado));
+        }
+        catch (Exception)
+        {
+            error = "No fue posible cargar el perfil. Intenta nuevamente más tarde.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private static string Valor(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No especificado" : valor;
+
+    private static string RangoFechas(DateTime? inicio, DateTime? fin, bool actual)
+    {
+        var inicioTexto = inicio?.ToString("MMM yyyy") ?? "Fecha inicial no especificada";
+        var finTexto = actual ? "Actualidad" : fin?.ToString("MMM yyyy") ?? "Fecha final no especificada";
+        return $"{inicioTexto} – {finTexto}";
+    }
+
+    private IEnumerable<SeccionPersonalizada> SeccionesCategoria(string categoria) =>
+        SeccionesPersonalizadas.Where(seccion => categoria switch
+        {
+            "productividad" => Contiene(seccion.TituloSeccion, "product")
+                || Contiene(seccion.TituloSeccion, "reconoc")
+                || Contiene(seccion.TituloSeccion, "aport")
+                || Contiene(seccion.TituloSeccion, "public")
+                || Contiene(seccion.TituloSeccion, "certific")
+                || Contiene(seccion.TituloSeccion, "premio"),
+            "vinculacion" => Contiene(seccion.TituloSeccion, "vincul")
+                || Contiene(seccion.TituloSeccion, "comunidad")
+                || Contiene(seccion.TituloSeccion, "particip")
+                || Contiene(seccion.TituloSeccion, "colabor")
+                || Contiene(seccion.TituloSeccion, "mentor"),
+            _ => false
+        });
+
+    private RenderFragment SeccionRespuestas(SeccionPersonalizada seccion) => builder =>
+    {
+        var campos = egresado!.ValoresCamposPersonalizados
+            .Where(valor => valor.CampoPersonalizado.IdSeccion == seccion.IdSeccion
+                && !string.IsNullOrWhiteSpace(valor.ValorCapturado))
+            .OrderBy(valor => valor.CampoPersonalizado.Orden)
+            .ToList();
+        if (campos.Count == 0)
+        {
+            return;
+        }
+
+        var sequence = 0;
+        builder.OpenElement(sequence++, "div");
+        builder.AddAttribute(sequence++, "class", "rounded-lg border border-gray-200 bg-gray-50 p-4");
+        builder.OpenElement(sequence++, "h3");
+        builder.AddAttribute(sequence++, "class", "mb-3 text-sm font-semibold text-gray-900");
+        builder.AddContent(sequence++, seccion.TituloSeccion);
+        builder.CloseElement();
+        builder.OpenElement(sequence++, "dl");
+        builder.AddAttribute(sequence++, "class", "grid grid-cols-1 gap-4 sm:grid-cols-2");
+        foreach (var campo in campos)
+        {
+            builder.OpenElement(sequence++, "div");
+            builder.OpenElement(sequence++, "dt");
+            builder.AddAttribute(sequence++, "class", "text-xs font-medium text-gray-500");
+            builder.AddContent(sequence++, campo.CampoPersonalizado.NombreEtiqueta);
+            builder.CloseElement();
+            builder.OpenElement(sequence++, "dd");
+            builder.AddAttribute(sequence++, "class", "mt-1 whitespace-pre-line text-sm text-gray-800");
+            builder.AddContent(sequence++, campo.ValorCapturado);
+            builder.CloseElement();
+            builder.CloseElement();
+        }
+        builder.CloseElement();
+        builder.CloseElement();
+    };
+
+    private static bool Contiene(string? texto, string valor) =>
+        texto?.Contains(valor, StringComparison.OrdinalIgnoreCase) == true;
+
+    private static bool TryGetPdfUrl(string? value, out Uri url)
+    {
+        if (Uri.TryCreate(value, UriKind.Absolute, out var parsed)
+            && (parsed.Scheme == Uri.UriSchemeHttps || parsed.Scheme == Uri.UriSchemeHttp)
+            && parsed.AbsolutePath.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            url = parsed;
+            return true;
+        }
+
+        url = null!;
+        return false;
+    }
+
+    private async Task DescargarCv()
+    {
+        if (egresado is null || descargandoCv)
+        {
+            return;
+        }
+
+        descargandoCv = true;
+        try
+        {
+            var pdf = CvPdfGenerator.Generar(egresado);
+            await JS.InvokeVoidAsync("followerFiles.downloadPdf",
+                $"CV_{NombreCompleto.Replace(' ', '_')}.pdf",
+                Convert.ToBase64String(pdf));
+        }
+        catch (Exception)
+        {
+            error = "No fue posible generar o descargar el CV. Intenta nuevamente.";
+        }
+        finally
+        {
+            descargandoCv = false;
+        }
+    }
+
+    private async Task PrevisualizarArchivo(EvidenciaPdf archivo)
+    {
+        if (egresado is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var contenido = await EvidenciaPdfService.LeerAsync(egresado.IdEgresado, archivo.Id);
+            using var stream = new MemoryStream(contenido);
+            using var referencia = new DotNetStreamReference(stream);
+            await JS.InvokeVoidAsync("followerFiles.openPdf", archivo.Nombre, referencia);
+        }
+        catch (Exception)
+        {
+            error = "No fue posible previsualizar el documento.";
+        }
+    }
+
+    private async Task DescargarArchivo(EvidenciaPdf archivo)
+    {
+        if (egresado is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var contenido = await EvidenciaPdfService.LeerAsync(egresado.IdEgresado, archivo.Id);
+            using var stream = new MemoryStream(contenido);
+            using var referencia = new DotNetStreamReference(stream);
+            await JS.InvokeVoidAsync("followerFiles.downloadPdfStream", archivo.Nombre, referencia);
+        }
+        catch (Exception)
+        {
+            error = "No fue posible descargar el documento.";
+        }
+    }
+}

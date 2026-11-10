@@ -17,6 +17,9 @@
                     <button @onclick='() => seccionActiva = "Trayectoria"' class="@ObtenerClaseMenu("Trayectoria")">
                         Trayectoria
                     </button>
+                    <button @onclick='() => seccionActiva = "Evidencias"' class="@ObtenerClaseMenu("Evidencias")">
+                        Evidencias y documentos
+                    </button>
                     <button @onclick='() => seccionActiva = "Productividad"' class="@ObtenerClaseMenu("Productividad")">
                         Productividad y Reconocimientos
                     </button>
@@ -58,6 +61,10 @@
             else if (seccionActiva == "Trayectoria")
             {
                 <Trayectoria/>
+            }
+            else if (seccionActiva == "Evidencias")
+            {
+                <EvidenciasPerfil />
             }
         </div>
     </div>

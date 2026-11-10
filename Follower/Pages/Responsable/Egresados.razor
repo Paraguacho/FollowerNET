@@ -1,0 +1,150 @@
+@page "/responsable"
+@attribute [Authorize(Roles = "ResponsablePrograma")]
+@using System.Security.Claims
+@using Follower.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject Follower.Data.ApplicationDbContext DbContext
+
+<div class="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-7xl">
+        <div class="mb-8">
+            <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Directorio</p>
+            <h1 class="mt-1 text-2xl font-bold text-gray-900">Egresados</h1>
+            <p class="mt-1 text-sm text-gray-500">Consulta los perfiles aprobados de tu programa educativo.</p>
+        </div>
+
+        @if (cargando)
+        {
+            <div class="rounded-xl border border-gray-200 bg-white p-8 text-center text-sm text-gray-500">Cargando egresados...</div>
+        }
+        else if (!string.IsNullOrWhiteSpace(error))
+        {
+            <div class="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">@error</div>
+        }
+        else if (programaActual is null)
+        {
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">No tienes un programa educativo asignado.</div>
+        }
+        else
+        {
+            <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                <div class="flex flex-col gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h2 class="font-bold text-gray-900">@programaActual.NombrePrograma</h2>
+                        <p class="mt-1 text-xs text-gray-500">@egresadosFiltrados.Count() perfiles</p>
+                    </div>
+                    <label class="sr-only" for="busqueda-egresados">Buscar egresado</label>
+                    <input id="busqueda-egresados"
+                           @bind="busqueda"
+                           @bind:event="oninput"
+                           placeholder="Buscar por nombre o correo"
+                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm sm:max-w-sm" />
+                </div>
+
+                @if (!egresadosFiltrados.Any())
+                {
+                    <p class="p-8 text-center text-sm text-gray-500">
+                        @(string.IsNullOrWhiteSpace(busqueda) ? "Aún no hay egresados aprobados para este programa." : "No se encontraron egresados con esos datos.")
+                    </p>
+                }
+                else
+                {
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-100 text-left">
+                            <thead class="bg-gray-50 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                <tr>
+                                    <th scope="col" class="px-5 py-3">Egresado</th>
+                                    <th scope="col" class="px-5 py-3">Programa</th>
+                                    <th scope="col" class="px-5 py-3">Año de egreso</th>
+                                    <th scope="col" class="px-5 py-3">Última actualización</th>
+                                    <th scope="col" class="px-5 py-3"><span class="sr-only">Acciones</span></th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                @foreach (var egresado in egresadosFiltrados)
+                                {
+                                    <tr @key="egresado.IdEgresado" class="hover:bg-blue-50/40">
+                                        <td class="whitespace-nowrap px-5 py-4">
+                                            <div class="font-medium text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div>
+                                            <div class="mt-1 text-xs text-gray-500">@egresado.Usuario?.Correo</div>
+                                        </td>
+                                        <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-600">@egresado.ProgramaEducativo?.Siglas</td>
+                                        <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-600">@(egresado.FechaEgreso?.ToString() ?? "No especificado")</td>
+                                        <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-600">@egresado.FechaUltimaActualizacion.ToString("dd MMM yyyy")</td>
+                                        <td class="whitespace-nowrap px-5 py-4 text-right">
+                                            <a href="@($"/responsable/egresado/{egresado.IdEgresado}")"
+                                               class="inline-flex items-center rounded-md border border-[#003366] px-3 py-2 text-sm font-medium text-[#003366] hover:bg-blue-50">
+                                                Ver perfil
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </section>
+        }
+    </div>
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private readonly List<Egresado> egresados = new();
+    private ProgramaEducativo? programaActual;
+    private string busqueda = string.Empty;
+    private string? error;
+    private bool cargando = true;
+
+    private IEnumerable<Egresado> egresadosFiltrados => egresados.Where(egresado =>
+        string.IsNullOrWhiteSpace(busqueda)
+        || $"{egresado.Nombres} {egresado.ApellidoPaterno} {egresado.ApellidoMaterno} {egresado.Usuario?.Correo}"
+            .Contains(busqueda, StringComparison.OrdinalIgnoreCase));
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var user = (await AuthStateTask).User;
+            if (!int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var idResponsable))
+            {
+                error = "No fue posible identificar la sesión del responsable.";
+                return;
+            }
+
+            var asignacion = await DbContext.ProgramasResponsables
+                .AsNoTracking()
+                .Include(programaResponsable => programaResponsable.ProgramaEducativo)
+                .FirstOrDefaultAsync(programaResponsable => programaResponsable.IdUsuario == idResponsable);
+
+            if (asignacion is null)
+            {
+                return;
+            }
+
+            programaActual = asignacion.ProgramaEducativo;
+            egresados.AddRange(await DbContext.Egresados
+                .AsNoTracking()
+                .Include(egresado => egresado.Usuario)
+                .Include(egresado => egresado.ProgramaEducativo)
+                .Where(egresado => egresado.IdPrograma == programaActual.IdPrograma
+                    && egresado.EstadoSolicitud == "Aprobado")
+                .OrderBy(egresado => egresado.ApellidoPaterno)
+                .ThenBy(egresado => egresado.ApellidoMaterno)
+                .ThenBy(egresado => egresado.Nombres)
+                .ToListAsync());
+        }
+        catch (Exception)
+        {
+            error = "No fue posible cargar el directorio. Intenta nuevamente más tarde.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+}

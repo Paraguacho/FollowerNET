@@ -23,7 +23,8 @@ namespace Follower
             builder.Services.AddServerSideBlazor();
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
-            builder.Services.AddScoped<IEgresadoService,EgresadoService>();            
+            builder.Services.AddScoped<IEgresadoService, EgresadoService>();
+            builder.Services.AddScoped<IEvidenciaPdfService, EvidenciaPdfService>();
 
 
             var app = builder.Build();
