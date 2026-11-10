@@ -1,6 +1,7 @@
 @page "/responsable/egresado/{IdEgresado:int}"
 @attribute [Authorize(Roles = "ResponsablePrograma")]
 @using System.Security.Claims
+@using System.Globalization
 @using Follower.Models
 @using Follower.Services
 @using Microsoft.AspNetCore.Authorization
@@ -10,6 +11,10 @@
 @inject Follower.Data.ApplicationDbContext DbContext
 @inject IEvidenciaPdfService EvidenciaPdfService
 @inject IJSRuntime JS
+
+@{
+    var culturaEspanol = CultureInfo.GetCultureInfo("es-MX");
+}
 
 <div class="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
     <div class="mx-auto max-w-6xl">
@@ -81,22 +86,22 @@
                 <p class="text-xs font-semibold uppercase tracking-wider text-gray-500">Perfil</p>
                 <h2 class="mt-1 text-lg font-bold text-gray-900">Información general</h2>
                 <dl class="mt-5 grid grid-cols-1 gap-x-8 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
-                    <div><dt class="text-xs text-gray-500">Nombre completo</dt><dd class="mt-1 text-sm font-medium text-gray-900">@NombreCompleto</dd></div>
-                    <div><dt class="text-xs text-gray-500">Correo electrónico</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@(egresado.Usuario?.Correo ?? "No especificado")</dd></div>
-                    <div><dt class="text-xs text-gray-500">Teléfono</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Telefono)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Programa</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.ProgramaEducativo?.NombrePrograma)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Generación / año de egreso</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.FechaEgreso?.ToString() ?? "No especificado")</dd></div>
-                    <div><dt class="text-xs text-gray-500">Situación laboral actual</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.SituacionLaboral?.EstadoActual)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Ciudad de residencia</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Ciudad)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Estado</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Estado)</dd></div>
-                    <div><dt class="text-xs text-gray-500">País</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.Pais)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Fecha de nacimiento</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.FechaNacimiento?.ToString("dd MMM yyyy") ?? "No especificada")</dd></div>
-                    <div><dt class="text-xs text-gray-500">LinkedIn</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.LinkedIn)</dd></div>
-                    <div><dt class="text-xs text-gray-500">ORCID</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.Orcid)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Google Scholar</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.GoogleScholar)</dd></div>
-                    <div><dt class="text-xs text-gray-500">ResearchGate</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.ResearchGate)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Academia.edu</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.AcademiaEdu)</dd></div>
-                    <div><dt class="text-xs text-gray-500">Scopus ID</dt><dd class="mt-1 text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.ScopusId)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Nombre completo</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@NombreCompleto</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Correo electrónico</dt><dd class="mt-1 break-all text-sm font-medium text-gray-900">@(egresado.Usuario?.Correo ?? "No especificado")</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Teléfono</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@Valor(egresado.Telefono)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Programa</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@Valor(egresado.ProgramaEducativo?.NombrePrograma)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Generación / año de egreso</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@(egresado.FechaEgreso?.ToString() ?? "No especificado")</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Situación laboral actual</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@Valor(egresado.SituacionLaboral?.EstadoActual)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Ciudad de residencia</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@Valor(egresado.Ciudad)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Estado</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@Valor(egresado.Estado)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">País</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@Valor(egresado.Pais)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Fecha de nacimiento</dt><dd class="mt-1 break-words text-sm font-medium text-gray-900">@(egresado.FechaNacimiento?.ToString("dd MMM yyyy", culturaEspanol) ?? "No especificada")</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">LinkedIn</dt><dd class="mt-1 break-all text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.LinkedIn)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">ORCID</dt><dd class="mt-1 break-all text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.Orcid)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Google Scholar</dt><dd class="mt-1 break-all text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.GoogleScholar)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">ResearchGate</dt><dd class="mt-1 break-all text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.ResearchGate)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Academia.edu</dt><dd class="mt-1 break-all text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.AcademiaEdu)</dd></div>
+                    <div class="rounded-lg bg-gray-50 p-3"><dt class="text-xs text-gray-500">Scopus ID</dt><dd class="mt-1 break-all text-sm font-medium text-gray-900">@Valor(egresado.PerfilAcademico?.ScopusId)</dd></div>
                 </dl>
             </section>
 
@@ -118,11 +123,11 @@
                                     <li @key="empleo.IdExperienciaLaboral" class="relative">
                                         <span class="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#003366]"></span>
                                         <p class="text-sm font-semibold text-gray-900">@Valor(empleo.Puesto)</p>
-                                        <p class="mt-1 text-sm text-gray-700">@Valor(empleo.Institucion)@(string.IsNullOrWhiteSpace(empleo.Sector) ? "" : $" · {empleo.Sector}")</p>
-                                        <p class="mt-1 text-xs text-gray-500">@RangoFechas(empleo.FechaInicio, empleo.FechaFin, empleo.EsEmpleoActual)</p>
+                                        <p class="mt-1 break-words text-sm text-gray-700">@Valor(empleo.Institucion)@(string.IsNullOrWhiteSpace(empleo.Sector) ? "" : $" · {empleo.Sector}")</p>
+                                        <p class="mt-1 text-xs text-gray-500">@RangoFechas(empleo.FechaInicio, empleo.FechaFin, empleo.EsEmpleoActual, culturaEspanol)</p>
                                         @if (!string.IsNullOrWhiteSpace(empleo.ActividadesPrincipales))
                                         {
-                                            <p class="mt-2 whitespace-pre-line text-sm text-gray-600">@empleo.ActividadesPrincipales</p>
+                                            <p class="mt-2 break-words whitespace-pre-line text-sm text-gray-600">@empleo.ActividadesPrincipales</p>
                                         }
                                         @if (!string.IsNullOrWhiteSpace(empleo.NivelEducativo) || !string.IsNullOrWhiteSpace(empleo.RelacionConFormacion))
                                         {
@@ -156,11 +161,11 @@
                                     <li @key="estudio.IdFormacionAcademica" class="relative">
                                         <span class="absolute -left-[21px] top-1.5 h-2.5 w-2.5 rounded-full bg-[#003366]"></span>
                                         <p class="text-sm font-semibold text-gray-900">@Valor(estudio.NombrePrograma)</p>
-                                        <p class="mt-1 text-sm text-gray-700">@Valor(estudio.Grado)@(string.IsNullOrWhiteSpace(estudio.Institucion) ? "" : $" · {estudio.Institucion}")</p>
-                                        <p class="mt-1 text-xs text-gray-500">@RangoFechas(estudio.FechaInicio, estudio.FechaFin, estudio.EsFormacionActual)</p>
+                                        <p class="mt-1 break-words text-sm text-gray-700">@Valor(estudio.Grado)@(string.IsNullOrWhiteSpace(estudio.Institucion) ? "" : $" · {estudio.Institucion}")</p>
+                                        <p class="mt-1 text-xs text-gray-500">@RangoFechas(estudio.FechaInicio, estudio.FechaFin, estudio.EsFormacionActual, culturaEspanol)</p>
                                         @if (!string.IsNullOrWhiteSpace(estudio.EstadoPrograma) || !string.IsNullOrWhiteSpace(estudio.Pais))
                                         {
-                                            <p class="mt-1 text-xs text-gray-500">@Valor(estudio.EstadoPrograma)@(string.IsNullOrWhiteSpace(estudio.Pais) ? "" : $" · {estudio.Pais}")</p>
+                                            <p class="mt-1 break-words text-xs text-gray-500">@Valor(estudio.EstadoPrograma)@(string.IsNullOrWhiteSpace(estudio.Pais) ? "" : $" · {estudio.Pais}")</p>
                                         }
                                         @if (estudio.RecibioBeca)
                                         {
@@ -236,47 +241,37 @@
                     </div>
                     <p class="text-xs text-gray-500">Archivos PDF compartidos</p>
                 </div>
-                @if (EvidenciasPdf.Any())
+                @if (Evidencias.Count > 0)
                 {
                     <ul class="mt-4 divide-y divide-gray-100">
-                        @foreach (var evidencia in EvidenciasPdf)
+                        @foreach (var evidencia in Evidencias)
                         {
-                            <li @key="evidencia.Url" class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
+                            <li @key="evidencia.Clave" class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                                 <div class="min-w-0">
-                                    <p class="truncate text-sm font-semibold text-gray-900">@evidencia.Nombre</p>
-                                    <p class="mt-1 text-xs text-gray-500">@evidencia.Seccion · @evidencia.Campo</p>
+                                    <p class="break-all text-sm font-semibold text-gray-900">@evidencia.Nombre</p>
+                                    <p class="mt-1 text-xs text-gray-500">@evidencia.Descripcion</p>
                                 </div>
                                 <div class="flex shrink-0 gap-2">
-                                    <a href="@evidencia.Url" target="_blank" rel="noopener noreferrer"
-                                       class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Vista previa</a>
-                                    <a href="@evidencia.Url" download
-                                       class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Descargar</a>
+                                    @if (evidencia.Archivo is not null)
+                                    {
+                                        <button @onclick="() => PrevisualizarArchivo(evidencia.Archivo)"
+                                                class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Vista previa</button>
+                                        <button @onclick="() => DescargarArchivo(evidencia.Archivo)"
+                                                class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Descargar</button>
+                                    }
+                                    else if (evidencia.Url is not null)
+                                    {
+                                        <a href="@evidencia.Url" target="_blank" rel="noopener noreferrer"
+                                           class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Vista previa</a>
+                                        <a href="@evidencia.Url" download
+                                           class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Descargar</a>
+                                    }
                                 </div>
                             </li>
                         }
                     </ul>
                 }
-                @if (archivosSubidos.Count > 0)
-                {
-                    <ul class="mt-4 divide-y divide-gray-100">
-                        @foreach (var archivo in archivosSubidos)
-                        {
-                            <li @key="archivo.Id" class="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
-                                <div class="min-w-0">
-                                    <p class="break-all text-sm font-semibold text-gray-900">@archivo.Nombre</p>
-                                    <p class="mt-1 text-xs text-gray-500">PDF · @($"{archivo.Tamano / 1024:N0} KB")</p>
-                                </div>
-                                <div class="flex shrink-0 gap-2">
-                                    <button @onclick="() => PrevisualizarArchivo(archivo)"
-                                            class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Vista previa</button>
-                                    <button @onclick="() => DescargarArchivo(archivo)"
-                                            class="rounded-md border border-gray-300 px-3 py-2 text-sm font-medium text-[#003366] hover:bg-gray-50">Descargar</button>
-                                </div>
-                            </li>
-                        }
-                    </ul>
-                }
-                @if (EvidenciasPdf.Count == 0 && archivosSubidos.Count == 0)
+                @if (Evidencias.Count == 0)
                 {
                     <p class="mt-4 text-sm text-gray-500">No hay documentos PDF compartidos.</p>
                 }
@@ -329,6 +324,21 @@
                     valor.CampoPersonalizado.NombreEtiqueta, url.ToString());
             })
             .ToList() ?? new();
+
+    private List<EvidenciaVista> Evidencias =>
+        EvidenciasPdf.Select((evidencia, indice) => new EvidenciaVista(
+                $"enlace-{indice}",
+                evidencia.Nombre,
+                $"{evidencia.Seccion} · {evidencia.Campo}",
+                evidencia.Url,
+                null))
+            .Concat(archivosSubidos.Select(archivo => new EvidenciaVista(
+                archivo.Id.ToString("N"),
+                archivo.Nombre,
+                $"PDF · {archivo.Tamano / 1024:N0} KB",
+                null,
+                archivo)))
+            .ToList();
 
     protected override async Task OnParametersSetAsync()
     {
@@ -392,10 +402,10 @@
 
     private static string Valor(string? valor) => string.IsNullOrWhiteSpace(valor) ? "No especificado" : valor;
 
-    private static string RangoFechas(DateTime? inicio, DateTime? fin, bool actual)
+    private static string RangoFechas(DateTime? inicio, DateTime? fin, bool actual, CultureInfo cultura)
     {
-        var inicioTexto = inicio?.ToString("MMM yyyy") ?? "Fecha inicial no especificada";
-        var finTexto = actual ? "Actualidad" : fin?.ToString("MMM yyyy") ?? "Fecha final no especificada";
+        var inicioTexto = inicio?.ToString("MMM yyyy", cultura) ?? "Fecha inicial no especificada";
+        var finTexto = actual ? "Actualidad" : fin?.ToString("MMM yyyy", cultura) ?? "Fecha final no especificada";
         return $"{inicioTexto} – {finTexto}";
     }
 
@@ -456,6 +466,8 @@
 
     private static bool Contiene(string? texto, string valor) =>
         texto?.Contains(valor, StringComparison.OrdinalIgnoreCase) == true;
+
+    private sealed record EvidenciaVista(string Clave, string Nombre, string Descripcion, string? Url, EvidenciaPdf? Archivo);
 
     private static bool TryGetPdfUrl(string? value, out Uri url)
     {

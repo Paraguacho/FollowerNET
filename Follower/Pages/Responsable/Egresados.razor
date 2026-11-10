@@ -1,6 +1,7 @@
 @page "/responsable"
 @attribute [Authorize(Roles = "ResponsablePrograma")]
 @using System.Security.Claims
+@using System.Globalization
 @using Follower.Models
 @using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Authorization
@@ -33,14 +34,18 @@
                 <div class="flex flex-col gap-3 border-b border-gray-100 p-5 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 class="font-bold text-gray-900">@programaActual.NombrePrograma</h2>
-                        <p class="mt-1 text-xs text-gray-500">@egresadosFiltrados.Count() perfiles</p>
+                        @{
+                            var cantidadPerfiles = egresadosFiltrados.Count();
+                        }
+                        <p class="mt-1 text-xs text-gray-500">@cantidadPerfiles @(cantidadPerfiles == 1 ? "perfil" : "perfiles")</p>
                     </div>
                     <label class="sr-only" for="busqueda-egresados">Buscar egresado</label>
                     <input id="busqueda-egresados"
                            @bind="busqueda"
                            @bind:event="oninput"
                            placeholder="Buscar por nombre o correo"
-                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm sm:max-w-sm" />
+                           aria-label="Buscar egresado por nombre o correo"
+                           class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100 sm:max-w-sm" />
                 </div>
 
                 @if (!egresadosFiltrados.Any())
@@ -67,15 +72,15 @@
                                 {
                                     <tr @key="egresado.IdEgresado" class="hover:bg-blue-50/40">
                                         <td class="whitespace-nowrap px-5 py-4">
-                                            <div class="font-medium text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div>
+                                            <div class="max-w-sm break-words font-medium text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div>
                                             <div class="mt-1 text-xs text-gray-500">@egresado.Usuario?.Correo</div>
                                         </td>
                                         <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-600">@egresado.ProgramaEducativo?.Siglas</td>
                                         <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-600">@(egresado.FechaEgreso?.ToString() ?? "No especificado")</td>
-                                        <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-600">@egresado.FechaUltimaActualizacion.ToString("dd MMM yyyy")</td>
+                                        <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-600">@egresado.FechaUltimaActualizacion.ToString("dd MMM yyyy", CultureInfo.GetCultureInfo("es-MX"))</td>
                                         <td class="whitespace-nowrap px-5 py-4 text-right">
                                             <a href="@($"/responsable/egresado/{egresado.IdEgresado}")"
-                                               class="inline-flex items-center rounded-md border border-[#003366] px-3 py-2 text-sm font-medium text-[#003366] hover:bg-blue-50">
+                                               class="inline-flex items-center rounded-md border border-[#003366] px-3 py-2 text-sm font-medium text-[#003366] hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300">
                                                 Ver perfil
                                             </a>
                                         </td>
