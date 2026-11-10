@@ -22,7 +22,13 @@ namespace Follower.Data
         public DbSet<SituacionLaboral>SituacionesLaborales { get; set; }
         public DbSet<ExperienciaLaboral> ExperienciasLaborales { get; set; }
         public DbSet<FormacionAcademica> FormacionesAcademicas { get; set; }
-
+        
+        public DbSet<ResumenProductividad> ResumenesProductividad { get; set; }
+        public DbSet<ProductividadCientifica> ProductividadesCientificas { get; set; }
+        public DbSet <CoautorProducto> CoautoresProductos { get; set; }
+        public DbSet<ProyectoInvestigacion> ProyectosInvestigacion { get; set;  }
+        public DbSet<ReconocimientoAcademico> ReconocimientosAcademicos { get; set; }
+        public DbSet<ContribucionSocial> ContribucionesSociales { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

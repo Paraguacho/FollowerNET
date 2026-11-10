@@ -56,6 +56,96 @@ namespace Follower.Migrations
                     b.ToTable("Campos_Personalizados");
                 });
 
+            modelBuilder.Entity("Follower.Models.CoautorProducto", b =>
+                {
+                    b.Property<int>("IdCoautor")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdCoautor"));
+
+                    b.Property<string>("ApellidoMaterno")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("ApellidoPaterno")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Nombres")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("ProductividadId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Rol")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("IdCoautor");
+
+                    b.HasIndex("ProductividadId");
+
+                    b.ToTable("Coautores_Productos");
+                });
+
+            modelBuilder.Entity("Follower.Models.ContribucionSocial", b =>
+                {
+                    b.Property<int>("IdContribucion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdContribucion"));
+
+                    b.Property<string>("ArchivoEvidencia")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("Descripcion")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<int>("EgresadoId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("FechaFin")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaInicio")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("NombreActividad")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Resultados")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<string>("SectorAtendido")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("TipoContribucion")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.HasKey("IdContribucion");
+
+                    b.HasIndex("EgresadoId");
+
+                    b.ToTable("Contribuciones_Sociales");
+                });
+
             modelBuilder.Entity("Follower.Models.Egresado", b =>
                 {
                     b.Property<int>("IdEgresado")
@@ -341,6 +431,65 @@ namespace Follower.Migrations
                     b.ToTable("Perfiles_Academicos");
                 });
 
+            modelBuilder.Entity("Follower.Models.ProductividadCientifica", b =>
+                {
+                    b.Property<int>("IdProductividad")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdProductividad"));
+
+                    b.Property<int?>("AnoPublicacion")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ArchivoPdf")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<string>("DoiUrl")
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<string>("Editorial")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<int>("EgresadoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Isbn")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("NombreProfesorMied")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Participacion")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("RevistaOLibro")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("TipoProducto")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.HasKey("IdProductividad");
+
+                    b.HasIndex("EgresadoId");
+
+                    b.ToTable("Productividades_Cientificas");
+                });
+
             modelBuilder.Entity("Follower.Models.ProgramaEducativo", b =>
                 {
                     b.Property<int>("IdPrograma")
@@ -389,6 +538,137 @@ namespace Follower.Migrations
                         .IsUnique();
 
                     b.ToTable("Programas_Responsables");
+                });
+
+            modelBuilder.Entity("Follower.Models.ProyectoInvestigacion", b =>
+                {
+                    b.Property<int>("IdProyecto")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdProyecto"));
+
+                    b.Property<int>("EgresadoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Funcion")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("Institucion")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Nombre")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<string>("Periodo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("IdProyecto");
+
+                    b.HasIndex("EgresadoId");
+
+                    b.ToTable("Proyectos_Investigacion");
+                });
+
+            modelBuilder.Entity("Follower.Models.ReconocimientoAcademico", b =>
+                {
+                    b.Property<int>("IdReconomiento")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdReconomiento"));
+
+                    b.Property<int>("AnoFin")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AnoInicio")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ArchivoEvidencia")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
+                    b.Property<int>("EgresadoId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EstadoActual")
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("InstitucionOtorgante")
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<string>("MotivoOCategoria")
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<string>("Nivel")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("NombreReconocimiento")
+                        .HasMaxLength(250)
+                        .HasColumnType("varchar(250)");
+
+                    b.Property<string>("TipoParticipacion")
+                        .HasMaxLength(150)
+                        .HasColumnType("varchar(150)");
+
+                    b.Property<string>("TipoRegistro")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.HasKey("IdReconomiento");
+
+                    b.HasIndex("EgresadoId");
+
+                    b.ToTable("Reconocomientos_Academicos");
+                });
+
+            modelBuilder.Entity("Follower.Models.ResumenProductividad", b =>
+                {
+                    b.Property<int>("IdResumen")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("IdResumen"));
+
+                    b.Property<int>("EgresadoId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("TieneCertificaciones")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("TieneContribucionSocial")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("TieneMembresias")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<bool>("TienePremios")
+                        .HasColumnType("tinyint(1)");
+
+                    b.HasKey("IdResumen");
+
+                    b.HasIndex("EgresadoId")
+                        .IsUnique();
+
+                    b.ToTable("Resumenes_Productividad");
                 });
 
             modelBuilder.Entity("Follower.Models.Rol", b =>
@@ -544,6 +824,28 @@ namespace Follower.Migrations
                     b.Navigation("SeccionPersonalizada");
                 });
 
+            modelBuilder.Entity("Follower.Models.CoautorProducto", b =>
+                {
+                    b.HasOne("Follower.Models.ProductividadCientifica", "Productividad")
+                        .WithMany("Coautores")
+                        .HasForeignKey("ProductividadId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Productividad");
+                });
+
+            modelBuilder.Entity("Follower.Models.ContribucionSocial", b =>
+                {
+                    b.HasOne("Follower.Models.Egresado", "Egresado")
+                        .WithMany("ContribucionesSociales")
+                        .HasForeignKey("EgresadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Egresado");
+                });
+
             modelBuilder.Entity("Follower.Models.Egresado", b =>
                 {
                     b.HasOne("Follower.Models.ProgramaEducativo", "ProgramaEducativo")
@@ -614,6 +916,17 @@ namespace Follower.Migrations
                     b.Navigation("Egresado");
                 });
 
+            modelBuilder.Entity("Follower.Models.ProductividadCientifica", b =>
+                {
+                    b.HasOne("Follower.Models.Egresado", "Egresado")
+                        .WithMany("ProductividadesCientificas")
+                        .HasForeignKey("EgresadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Egresado");
+                });
+
             modelBuilder.Entity("Follower.Models.ProgramaResponsable", b =>
                 {
                     b.HasOne("Follower.Models.ProgramaEducativo", "ProgramaEducativo")
@@ -631,6 +944,39 @@ namespace Follower.Migrations
                     b.Navigation("ProgramaEducativo");
 
                     b.Navigation("Usuario");
+                });
+
+            modelBuilder.Entity("Follower.Models.ProyectoInvestigacion", b =>
+                {
+                    b.HasOne("Follower.Models.Egresado", "Egresado")
+                        .WithMany("ProyectosInvestigacion")
+                        .HasForeignKey("EgresadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Egresado");
+                });
+
+            modelBuilder.Entity("Follower.Models.ReconocimientoAcademico", b =>
+                {
+                    b.HasOne("Follower.Models.Egresado", "Egresado")
+                        .WithMany("ReconocimientosAcademicos")
+                        .HasForeignKey("EgresadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Egresado");
+                });
+
+            modelBuilder.Entity("Follower.Models.ResumenProductividad", b =>
+                {
+                    b.HasOne("Follower.Models.Egresado", "Egresado")
+                        .WithOne("ResumenProductividad")
+                        .HasForeignKey("Follower.Models.ResumenProductividad", "EgresadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Egresado");
                 });
 
             modelBuilder.Entity("Follower.Models.SeccionPersonalizada", b =>
@@ -694,6 +1040,8 @@ namespace Follower.Migrations
 
             modelBuilder.Entity("Follower.Models.Egresado", b =>
                 {
+                    b.Navigation("ContribucionesSociales");
+
                     b.Navigation("ExperienciasLaborales");
 
                     b.Navigation("FormacionesAcademicas");
@@ -701,10 +1049,24 @@ namespace Follower.Migrations
                     b.Navigation("PerfilAcademico")
                         .IsRequired();
 
+                    b.Navigation("ProductividadesCientificas");
+
+                    b.Navigation("ProyectosInvestigacion");
+
+                    b.Navigation("ReconocimientosAcademicos");
+
+                    b.Navigation("ResumenProductividad")
+                        .IsRequired();
+
                     b.Navigation("SituacionLaboral")
                         .IsRequired();
 
                     b.Navigation("ValoresCamposPersonalizados");
+                });
+
+            modelBuilder.Entity("Follower.Models.ProductividadCientifica", b =>
+                {
+                    b.Navigation("Coautores");
                 });
 
             modelBuilder.Entity("Follower.Models.ProgramaEducativo", b =>
