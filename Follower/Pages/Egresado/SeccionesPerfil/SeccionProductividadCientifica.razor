@@ -1,0 +1,95 @@
+﻿@using Follower.Models
+@using Follower.Services
+@inject IEgresadoService EgresadoService
+
+<div class="bg-white display-6 rounded-xl border border-gray-200  shadow-sm">
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="text-lg font-bold text-gray-900">Productividad científica</h2>
+        @if (!mostrandoFormulario)
+        {
+            <buton @onclick="() => mostrandoFormulario = true" class="text-sm font-medium text-[#003366] hover:underline">
+                + Registrar producto
+            </buton>
+        }
+    </div
+
+    <!-- Productos guardados -->
+    @if (EgresadoModel.ProductividadesCientificas.Any())
+    {
+        <div class="space-y-4 mb-6">
+            @foreach (var prod in EgresadoModel.ProductividadesCientificas)
+            {
+                <div class="border border-gray-200 rounded-lg p-5 bg-white relative">
+                    <div class="position-absolute rounded-top-4 right-5 flex-column space-x-3 text-[13px] font-medium text-slate-400">
+                        <button class="hover:text-slate-600 transition-colors">Editar</button>
+                    </div>
+                </div>
+                <h3 class="font-bold text-slate-900 text-lg mb-1 pr-32">@prod.Titulo</h3>
+                <p class="text-xl-start text-[#003366] font-bold mb-1.5 uppercase">@prod.TipoProducto</p>
+                
+                <p class="text-sm text-slate-600 mb-4">
+                    @(string.IsNullOrEmpty(prod.RevistaOLibro) ? prod.Editorial : prod.RevistaOLibro)
+                    @if(prod.AnoPublicacion.HasValue) { <span>• @prod.AnoPublicacion </span>}
+                </p>
+
+                //@IF 
+
+            }
+        </div>
+        
+    }
+
+</div>
+@code {
+    public Egresado EgresadoModel { get; set; } = null!;
+    public EventCallback<string> OnNotificar { get; set; }
+    private bool mostrandoFormulario = false;
+    private ProductividadCientifica nuevoRegistro = new ProductividadCientifica();
+    private CoautorProducto tempCoautor = new CoautorProducto();
+
+    private void AgregarCoautor()
+    {
+        if (!string.IsNullOrWhiteSpace(tempCoautor.Nombres) && !string.IsNullOrWhiteSpace(tempCoautor.ApellidoPaterno) && !string.IsNullOrWhiteSpace(tempCoautor.Rol))
+        {
+            nuevoRegistro.Coautores.Add(new CoautorProducto
+            {
+                Nombres = tempCoautor.Nombres,
+                ApellidoPaterno = tempCoautor.ApellidoPaterno,
+                Rol = tempCoautor.Rol
+            });
+            tempCoautor = new CoautorProducto();
+        }
+    }
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoRegistro.Titulo))
+        {
+            await OnNotificar.InvokeAsync("El titulo es obligatorio.");
+            return;
+        }
+        nuevoRegistro.EgresadoId = EgresadoModel.IdEgresado;
+        EgresadoModel.ProductividadesCientificas.Add(nuevoRegistro);
+        await EgresadoService.ActualizarAsync(EgresadoModel);
+        nuevoRegistro = new ProductividadCientifica();
+        mostrandoFormulario = false;
+        await OnNotificar.InvokeAsync("Producto registrado exitosamente.");
+    }
+
+    private void Cancelar()
+    {
+        nuevoRegistro = new ProductividadCientifica();
+        tempCoautor = new CoautorProducto();
+        mostrandoFormulario = false;
+    }
+
+    private async Task ConfirmarEliminar (ProductividadCientifica prod)
+    {
+        if (prod.IdProductividad > 0)
+        {
+            EgresadoModel.ProductividadesCientificas.Remove(prod);
+            await OnNotificar.InvokeAsync("Producto eliminado.");
+        }
+    }
+
+
+}
