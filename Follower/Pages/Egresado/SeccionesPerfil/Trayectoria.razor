@@ -90,18 +90,64 @@ else
                 <div class="space-y-4 mb-6">
                     @foreach (var empleo in egresado.ExperienciasLaborales)
                     {
-                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-bold text-gray-900">@empleo.Puesto</h3>
-                                    <p class="text-sm text-gray-600">@empleo.Institucion • @(empleo.Sector ?? "Sector no especificado")</p>
-                                    <p class="text-xs text-gray-500 mt-1">
-                                        @(empleo.FechaInicio?.ToString("MMM yyyy") ?? "N/A") - 
-                                        @(empleo.EsEmpleoActual ? "Actualidad" : (empleo.FechaFin?.ToString("MMM yyyy") ?? "N/A"))
-                                    </p>
-                                </div>
-                                <button @onclick="() => ConfirmarEliminarEmpleo(empleo)" class="text-xs text-red-600 hover:text-red-800 font-medium">Eliminar</button>
+                        <div class="border border-gray-200 rounded-lg p-5 bg-white relative">
+                            <!-- Botones de Acción (Esquina superior derecha) -->
+                            <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
+                                <button class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button @onclick="() => ConfirmarEliminarEmpleo(empleo)" class="hover:text-red-500 transition-colors">Eliminar</button>
                             </div>
+
+                            <!-- Encabezado  -->
+                            <h3 class="font-bold text-slate-900 text-lg mb-1">@empleo.Puesto</h3>
+
+                            <!-- Institución / Sector -->
+                            <div class="flex items-center text-sm mb-1.5">
+                                <span class="text-[#003366] font-medium mr-2">@empleo.Institucion</span>
+                                <span class="text-slate-300 mr-2">|</span>
+                                <span class="text-slate-500">@(empleo.Sector ?? "Sector no especificado")</span>
+                            </div>
+
+                            <!-- Fechas y Estado -->
+                            <p class="text-sm text-slate-500 mb-4">
+                                @(empleo.FechaInicio?.ToString("MMMM yyyy").Replace(empleo.FechaInicio.Value.ToString("MMMM"), char.ToUpper(empleo.FechaInicio.Value.ToString("MMMM")[0]) + empleo.FechaInicio.Value.ToString("MMMM").Substring(1)) ?? "N/A") -
+                                @if (empleo.EsEmpleoActual)
+                                {
+                                    <span>Presente <span class="font-bold text-[#003366]">(Vigente)</span></span>
+                                }
+                                else
+                                {
+                                    @(empleo.FechaFin?.ToString("MMMM yyyy").Replace(empleo.FechaFin.Value.ToString("MMMM"), char.ToUpper(empleo.FechaFin.Value.ToString("MMMM")[0]) + empleo.FechaFin.Value.ToString("MMMM").Substring(1)) ?? "N/A")
+                                }
+                            </p>
+
+                            <!-- Actividades -->
+                            @if (!string.IsNullOrWhiteSpace(empleo.ActividadesPrincipales))
+                            {
+                                <p class="text-[15px] text-slate-600 mb-5">
+                                    @empleo.ActividadesPrincipales
+                                </p>
+                            }
+
+                            <!-- Bloque MIED (Condicional) -->
+                            @if (!string.IsNullOrWhiteSpace(empleo.NivelEducativo) || !string.IsNullOrWhiteSpace(empleo.RelacionConFormacion))
+                            {
+                                <div class="border-t border-slate-100 pt-4 grid grid-cols-2 gap-4">
+                                    @if (!string.IsNullOrWhiteSpace(empleo.NivelEducativo))
+                                    {
+                                        <div>
+                                            <p class="text-[11px] font-bold text-slate-400 mb-0.5">NIVEL EDUCATIVO</p>
+                                            <p class="text-sm text-slate-800">@empleo.NivelEducativo</p>
+                                        </div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(empleo.RelacionConFormacion))
+                                    {
+                                        <div>
+                                            <p class="text-[11px] font-bold text-slate-400 mb-0.5">RELACIÓN CON MIED</p>
+                                            <p class="text-sm text-slate-800">@empleo.RelacionConFormacion</p>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
                     }
                 </div>
@@ -203,20 +249,66 @@ else
                 <div class="space-y-4 mb-6">
                     @foreach (var estudio in egresado.FormacionesAcademicas)
                     {
-                        <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition">
-                            <div class="flex justify-between items-start">
-                                <div>
-                                    <h3 class="font-bold text-gray-900">@estudio.NombrePrograma</h3>
-                                    <p class="text-sm text-gray-600">@estudio.Institucion • @(estudio.Grado)</p>
-                                    @if(estudio.RecibioBeca)
-                                    {
-                                        <p class="text-xs text-[#003366] mt-1 font-medium bg-blue-50 inline-block px-2 py-1 rounded">
-                                            Con apoyo/beca: @estudio.InstitucionOtorgante
-                                        </p>
-                                    }
-                                </div>
-                                <button @onclick="() => ConfirmarEliminarEstudio(estudio)" class="text-xs text-red-600 hover:text-red-800 font-medium">Eliminar</button>
+                        <div class="border border-gray-200 rounded-lg p-5 bg-white relative">
+                            <!-- Botones de Acción (Esquina superior derecha) -->
+                            <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
+                                <button class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button @onclick="() => ConfirmarEliminarEstudio(estudio)" class="hover:text-red-500 transition-colors">Eliminar</button>
                             </div>
+
+                            <!-- Encabezado Principal -->
+                            <h3 class="font-bold text-slate-900 text-lg mb-1">@estudio.NombrePrograma</h3>
+
+                            <!-- Subtítulo Institución / País -->
+                            <div class="flex items-center text-sm mb-1.5">
+                                <span class="text-[#003366] font-medium mr-2">@estudio.Institucion</span>
+                                <span class="text-slate-300 mr-2">|</span>
+                                <span class="text-slate-500">@(estudio.Pais ?? "País no especificado")</span>
+                            </div>
+
+                            <!-- Fechas y Estado -->
+                            <p class="text-sm text-slate-500 mb-5">
+                                @(estudio.FechaInicio?.ToString("MMMM yyyy").Replace(estudio.FechaInicio.Value.ToString("MMMM"), char.ToUpper(estudio.FechaInicio.Value.ToString("MMMM")[0]) + estudio.FechaInicio.Value.ToString("MMMM").Substring(1)) ?? "N/A") -
+                                @if (estudio.EstadoPrograma == "En curso")
+                                {
+                                    <span>Presente <span class="font-bold text-[#003366]">(En curso)</span></span>
+                                }
+                                else
+                                {
+                                    @(estudio.FechaFin?.ToString("MMMM yyyy").Replace(estudio.FechaFin.Value.ToString("MMMM"), char.ToUpper(estudio.FechaFin.Value.ToString("MMMM")[0]) + estudio.FechaFin.Value.ToString("MMMM").Substring(1)) ?? "N/A")
+                                }
+                            </p>
+
+                            <!-- Bloque de Apoyo Financiero (Condicional) -->
+                            @if (estudio.RecibioBeca)
+                            {
+                                <div class="bg-[#f8fafc] rounded-md border border-slate-100 p-4">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <h4 class="text-sm font-bold text-slate-900">Apoyo o financiamiento recibido</h4>
+                                        <span class="bg-[#e0effe] text-[#1e40af] text-[10px] font-bold px-2 py-1 rounded">DATO DEL PROGRAMA</span>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 gap-y-4 gap-x-4">
+                                        <div>
+                                            <p class="text-[11px] font-bold text-slate-400 mb-0.5">TIPO DE APOYO</p>
+                                            <p class="text-sm text-slate-700">@estudio.TipoApoyo</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] font-bold text-slate-400 mb-0.5">INSTITUCIÓN OTORGANTE</p>
+                                            <p class="text-sm text-slate-700">@estudio.InstitucionOtorgante</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] font-bold text-slate-400 mb-0.5">AÑO</p>
+                                            <p class="text-sm text-slate-700">@estudio.AnoOtorgamiento</p>
+                                        </div>
+                                        <div>
+                                            <p class="text-[11px] font-bold text-slate-400 mb-0.5">MONTO ASIGNADO</p>
+                                            <p class="text-sm text-slate-700">@estudio.MontoAsignado</p>
+                                        </div>
+                                        @* asignar vigencia despues*@
+                                    </div>
+                                </div>
+                            }
                         </div>
                     }
                 </div>

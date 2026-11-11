@@ -81,12 +81,26 @@ namespace Follower.Models
         public SituacionLaboral SituacionLaboral { get; set; }
         public ICollection<ExperienciaLaboral> ExperienciasLaborales { get; set; }
         public ICollection<FormacionAcademica> FormacionesAcademicas { get; set; }
+        
+        public ResumenProductividad ResumenProductividad { get; set; }
+        public ICollection<ProductividadCientifica> ProductividadesCientificas { get; set; }
+        public ICollection<ProyectoInvestigacion> ProyectosInvestigacion { get; set; }
+        public ICollection<ReconocimientoAcademico> ReconocimientosAcademicos { get; set; }
+        public ICollection<ContribucionSocial> ContribucionesSociales { get; set; }
         public Egresado()
         {
             PerfilAcademico = new PerfilAcademico();
             SituacionLaboral = new SituacionLaboral();
             ExperienciasLaborales = new List<ExperienciaLaboral>();
             FormacionesAcademicas = new List<FormacionAcademica>();
+
+            //Productividad
+            ResumenProductividad = new ResumenProductividad();
+            ProductividadesCientificas = new List<ProductividadCientifica>();
+            ProyectosInvestigacion = new List<ProyectoInvestigacion>();
+            ReconocimientosAcademicos = new List<ReconocimientoAcademico>();
+            ContribucionesSociales = new List<ContribucionSocial>(); 
+            
         }
 
 

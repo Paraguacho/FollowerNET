@@ -1002,7 +1002,7 @@ VALUES
 -- Se vincula al IdUsuario 2 y al IdPrograma 1 (MIED)
 INSERT INTO `Egresados` (`IdEgresado`, `EstadoSolicitud`,`PrivacidadPerfil`,`AutorizaDirectorio`,`IdUsuario`, `IdPrograma`, `Nombres`, `ApellidoPaterno`, `ApellidoMaterno`,`FechaAceptacionPrivacidad`,`FechaUltimaActualizacion`) 
 VALUES 
-    (1,"Aprobada","Privado",0, 2, 1, 'Sebastián', 'Martínez', 'Soqui',NOW(),NOW());
+    (1,"Aprobado","Privado",0, 2, 1, 'Sebastián', 'Martínez', 'Soqui',NOW(),NOW());
     
 --  Vincular reponsable con programa educativo
 INSERT INTO programas_responsables (`IdPrograma`,`IdUsuario`,`FechaAsignacion`) values (1,1,now());
