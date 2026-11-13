@@ -11,11 +11,17 @@ namespace Follower.Repositories
     {
         private readonly ApplicationDbContext _context;
 
+        // HU3.2 / HU3.3
+        // Flujo: recibe el contexto EF que proporciona la conexión MySQL configurada.
+        // Función: prepara la ejecución de consultas de búsqueda y carga de perfiles.
         public EgresadosBusquedaRepository(ApplicationDbContext context)
         {
             _context = context;
         }
 
+        // HU3.2 / HU3.3
+        // Flujo: crea un comando parametrizado, lo ejecuta y convierte el valor escalar obtenido a entero largo.
+        // Función: devuelve el conteo total de resultados que coincide con los filtros.
         public Task<long> EjecutarEscalarAsync(
             string sql,
             IReadOnlyDictionary<string, object?> parametros,
@@ -29,6 +35,9 @@ namespace Follower.Repositories
             }, cancellationToken);
         }
 
+        // HU3.3
+        // Flujo: consulta el egresado aprobado del programa indicado e incluye sus secciones relacionadas sin seguimiento de cambios.
+        // Función: carga datos para la vista de perfil de solo lectura y respeta el alcance autorizado.
         public Task<Egresado?> ObtenerPerfilAutorizadoAsync(
             int idEgresado,
             int idPrograma,
@@ -56,6 +65,9 @@ namespace Follower.Repositories
                 .FirstOrDefaultAsync(cancellationToken);
         }
 
+        // HU3.2 / HU3.3
+        // Flujo: ejecuta el comando, recorre el lector y aplica la función de mapeo a cada fila.
+        // Función: retorna filas de búsqueda u opciones tipadas al servicio.
         public Task<IReadOnlyList<T>> EjecutarConsultaAsync<T>(
             string sql,
             IReadOnlyDictionary<string, object?> parametros,
@@ -76,6 +88,9 @@ namespace Follower.Repositories
             }, cancellationToken);
         }
 
+        // HU3.2 / HU3.3
+        // Flujo: obtiene la conexión de EF, la abre si estaba cerrada y la cierra al finalizar la ejecución.
+        // Función: administra la conexión usada por los comandos nativos del repositorio.
         private async Task<T> EjecutarConConexionAsync<T>(
             Func<DbConnection, Task<T>> ejecutar,
             CancellationToken cancellationToken)
@@ -100,6 +115,9 @@ namespace Follower.Repositories
             }
         }
 
+        // HU3.2 / HU3.3
+        // Flujo: asigna el SQL y crea un parámetro de base de datos por cada valor recibido.
+        // Función: evita insertar valores de filtros directamente en el comando SQL.
         private static DbCommand CrearComando(
             DbConnection connection,
             string sql,

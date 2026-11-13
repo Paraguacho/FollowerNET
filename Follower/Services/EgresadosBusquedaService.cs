@@ -29,6 +29,9 @@ namespace Follower.Services
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly IEgresadosBusquedaRepository _repository;
 
+        // HU3.2 / HU3.3
+        // Flujo: recibe por inyección el proveedor de identidad y el repositorio de consultas.
+        // Función: prepara las dependencias para filtrar, paginar y cargar perfiles autorizados.
         public EgresadosBusquedaService(
             AuthenticationStateProvider authStateProvider,
             IEgresadosBusquedaRepository repository)
@@ -37,6 +40,9 @@ namespace Follower.Services
             _repository = repository;
         }
 
+        // HU3.2
+        // Flujo: resuelve el programa autorizado, consulta las situaciones registradas y las combina con las opciones estándar.
+        // Función: proporciona los catálogos que alimentan los controles de filtrado.
         public async Task<EgresadosBusquedaOpcionesDto> ObtenerOpcionesAsync(CancellationToken cancellationToken = default)
         {
             var programa = await ObtenerProgramaAutorizadoAsync(cancellationToken);
@@ -69,6 +75,9 @@ namespace Follower.Services
             };
         }
 
+        // HU3.3
+        // Flujo: valida el identificador, resuelve el programa del responsable y solicita al repositorio el perfil dentro de ese alcance.
+        // Función: carga el perfil detallado del egresado seleccionado sin permitir acceder a perfiles de otros programas.
         public async Task<Egresado?> ObtenerPerfilAutorizadoAsync(
             int idEgresado,
             CancellationToken cancellationToken = default)
@@ -82,6 +91,9 @@ namespace Follower.Services
             return await _repository.ObtenerPerfilAutorizadoAsync(idEgresado, programa.IdPrograma, cancellationToken);
         }
 
+        // HU3.2 / HU3.3
+        // Flujo: normaliza filtros, construye condiciones parametrizadas, obtiene el total, aplica orden y paginación, y mapea las filas.
+        // Función: devuelve únicamente la página de resultados que cumple todos los criterios activos.
         public async Task<EgresadosBusquedaPaginaDto> BuscarAsync(
             EgresadosBusquedaFiltrosDto filtros,
             CancellationToken cancellationToken = default)
@@ -128,6 +140,9 @@ namespace Follower.Services
             };
         }
 
+        // HU3.2 / HU3.3
+        // Flujo: valida autenticación y rol, lee el identificador de usuario y consulta su asignación de programa.
+        // Función: establece el alcance autorizado que se aplica a filtros, resultados y perfiles detallados.
         private async Task<(int IdPrograma, string Siglas)> ObtenerProgramaAutorizadoAsync(CancellationToken cancellationToken)
         {
             var authenticationState = await _authStateProvider.GetAuthenticationStateAsync();
@@ -165,6 +180,9 @@ namespace Follower.Services
             };
         }
 
+        // HU3.2 / HU3.3
+        // Flujo: recorta y valida los textos, comprueba los catálogos y ajusta página y tamaño a valores permitidos.
+        // Función: evita criterios inválidos antes de construir la consulta.
         private static EgresadosBusquedaFiltrosDto NormalizarFiltros(EgresadosBusquedaFiltrosDto filtros)
         {
             var resultado = new EgresadosBusquedaFiltrosDto
@@ -206,6 +224,9 @@ namespace Follower.Services
             return resultado;
         }
 
+        // HU3.2
+        // Flujo: agrega el alcance del programa y estado aprobado, y añade una condición parametrizada por cada filtro informado.
+        // Función: construye el WHERE común para el conteo y la página de resultados.
         private static (string Sql, Dictionary<string, object?> Parametros) CrearCondiciones(
             EgresadosBusquedaFiltrosDto filtros,
             int idPrograma)
@@ -272,6 +293,9 @@ namespace Follower.Services
             return ($"{BaseFrom} WHERE {string.Join(" AND ", condiciones)}", parametros);
         }
 
+        // HU3.2
+        // Flujo: si el campo tiene texto, agrega REGEXP y convierte el valor en un patrón literal parametrizado.
+        // Función: filtra país, estado o ciudad sin interpretar la entrada como SQL ni como expresión arbitraria.
         private static void AgregarFiltroRegexp(
             ICollection<string> condiciones,
             IDictionary<string, object?> parametros,
@@ -288,6 +312,9 @@ namespace Follower.Services
             parametros[nombreParametro] = CrearPatronRegexpLiteral(valor);
         }
 
+        // HU3.3
+        // Flujo: convierte el criterio de orden permitido en una expresión SQL fija.
+        // Función: habilita ordenar por nombre, año, situación laboral o actualización sin concatenar campos del usuario.
         private static string ObtenerOrdenSql(EgresadosOrdenCampo ordenarPor) => ordenarPor switch
         {
             EgresadosOrdenCampo.Nombre => "CONCAT_WS(' ', e.`Nombres`, e.`ApellidoPaterno`, e.`ApellidoMaterno`)",
@@ -297,6 +324,9 @@ namespace Follower.Services
             _ => throw new ArgumentOutOfRangeException(nameof(ordenarPor))
         };
 
+        // HU3.3
+        // Flujo: lee las columnas seleccionadas por la consulta y las copia al DTO resumido de la tabla.
+        // Función: entrega a la interfaz los datos necesarios para cada fila.
         private static EgresadosBusquedaFilaDto MapearFila(DbDataReader reader) => new()
         {
             IdEgresado = reader.GetInt32(0),
@@ -308,6 +338,9 @@ namespace Follower.Services
             FechaUltimaActualizacion = reader.GetDateTime(6)
         };
 
+        // HU3.2
+        // Flujo: recorta el texto, convierte entradas vacías en null y rechaza valores que exceden el límite.
+        // Función: normaliza filtros de texto antes de consultar la base de datos.
         private static string? NormalizarTexto(string? valor, int longitudMaxima)
         {
             var texto = valor?.Trim();
@@ -324,6 +357,9 @@ namespace Follower.Services
             return texto;
         }
 
+        // HU3.2
+        // Flujo: escapa los comodines de LIKE y agrega los comodines de búsqueda parcial.
+        // Función: busca coincidencias de nombre e institución como texto literal.
         private static string CrearPatronLike(string texto)
         {
             var literal = texto.Replace("!", "!!", StringComparison.Ordinal)
@@ -332,6 +368,9 @@ namespace Follower.Services
             return $"%{literal}%";
         }
 
+        // HU3.2
+        // Flujo: escapa los metacaracteres del texto y lo envuelve como coincidencia parcial.
+        // Función: permite usar REGEXP para ubicación sin que el texto ingresado cambie la expresión de búsqueda.
         private static string CrearPatronRegexpLiteral(string texto)
         {
             var resultado = new StringBuilder(".*");

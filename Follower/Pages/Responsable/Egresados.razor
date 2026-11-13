@@ -210,6 +210,9 @@
     private long UltimoResultado => Math.Min((long)filtros.Pagina * filtros.RegistrosPorPagina, totalResultados);
     private IReadOnlyList<string> FiltrosActivos => ObtenerFiltrosActivos();
 
+    // HU3.2 / HU3.3
+    // Flujo: solicita opciones de filtro y ejecuta la primera consulta de resultados al cargar la página.
+    // Función: inicializa la búsqueda y muestra la primera página del programa autorizado.
     protected override async Task OnInitializedAsync()
     {
         try
@@ -231,6 +234,9 @@
         }
     }
 
+    // HU3.2 / HU3.3
+    // Flujo: envía los filtros al servicio, actualiza filas y conteo, y conserva los criterios aplicados.
+    // Función: refresca la tabla al aplicar filtros, ordenar o cambiar de página.
     private async Task CargarResultadosAsync(bool reiniciarPagina = false)
     {
         if (reiniciarPagina)
@@ -267,6 +273,9 @@
         }
     }
 
+    // HU3.2
+    // Flujo: detecta Enter en el campo de nombre y solicita una nueva búsqueda desde la primera página.
+    // Función: permite iniciar la búsqueda por teclado.
     private async Task ManejarTecla(KeyboardEventArgs args)
     {
         if (args.Key == "Enter")
@@ -275,16 +284,28 @@
         }
     }
 
+    // HU3.2
+    // Flujo: reinicia el índice de página y delega la consulta al servicio.
+    // Función: aplica el texto de búsqueda por nombre.
     private Task AplicarBusquedaAsync() => CargarResultadosAsync(reiniciarPagina: true);
 
+    // HU3.2
+    // Flujo: reinicia la página y envía simultáneamente los criterios seleccionados.
+    // Función: aplica los filtros multicriterio a la lista.
     private Task AplicarFiltrosAsync() => CargarResultadosAsync(reiniciarPagina: true);
 
+    // HU3.2
+    // Flujo: vacía el término de búsqueda y recarga los resultados sin ese criterio.
+    // Función: elimina únicamente el filtro por nombre.
     private async Task LimpiarBusquedaAsync()
     {
         filtros.TerminoBusqueda = string.Empty;
         await AplicarBusquedaAsync();
     }
 
+    // HU3.2
+    // Flujo: restablece los filtros de búsqueda y solicita de nuevo la lista autorizada sin criterios.
+    // Función: limpia todos los filtros activos.
     private async Task LimpiarTodosLosFiltrosAsync()
     {
         filtros.TerminoBusqueda = null;
@@ -301,8 +322,14 @@
         await CargarResultadosAsync(reiniciarPagina: true);
     }
 
+    // HU3.2
+    // Flujo: alterna el estado visible del panel.
+    // Función: muestra u oculta los controles de filtro.
     private void AlternarFiltros() => mostrandoFiltros = !mostrandoFiltros;
 
+    // HU3.3
+    // Flujo: cambia dirección si se repite la columna o selecciona una columna nueva y consulta otra vez.
+    // Función: ordena la tabla en el servidor por el encabezado seleccionado.
     private async Task OrdenarPorAsync(EgresadosOrdenCampo campo)
     {
         if (filtros.OrdenarPor == campo)
@@ -318,6 +345,9 @@
         await CargarResultadosAsync();
     }
 
+    // HU3.3
+    // Flujo: compara el campo solicitado con el criterio activo y selecciona la flecha correspondiente.
+    // Función: comunica visualmente la columna y dirección del ordenamiento.
     private string IconoOrden(EgresadosOrdenCampo campo)
     {
         if (filtros.OrdenarPor != campo)
@@ -328,8 +358,14 @@
         return filtros.OrdenAscendente ? "↑" : "↓";
     }
 
+    // HU3.3
+    // Flujo: vuelve a la primera página y solicita los resultados con el nuevo tamaño.
+    // Función: actualiza la paginación para 10, 20 o 50 filas por página.
     private Task CambiarRegistrosPorPaginaAsync() => CargarResultadosAsync(reiniciarPagina: true);
 
+    // HU3.3
+    // Flujo: decrementa la página cuando existe una anterior y vuelve a consultar.
+    // Función: navega a la página previa de resultados.
     private async Task PaginaAnteriorAsync()
     {
         if (filtros.Pagina > 1)
@@ -339,6 +375,9 @@
         }
     }
 
+    // HU3.3
+    // Flujo: incrementa la página si no se alcanzó la última y vuelve a consultar.
+    // Función: navega a la página siguiente de resultados.
     private async Task PaginaSiguienteAsync()
     {
         if (filtros.Pagina < TotalPaginas)
@@ -348,6 +387,9 @@
         }
     }
 
+    // HU3.2
+    // Flujo: copia al estado de filtros aplicados los criterios que devolvieron una consulta exitosa.
+    // Función: evita marcar como activos filtros que todavía no se aplicaron.
     private void CopiarFiltrosAplicados()
     {
         filtrosAplicados.TerminoBusqueda = filtros.TerminoBusqueda;
@@ -363,6 +405,9 @@
         filtrosAplicados.SoloDesactualizados = filtros.SoloDesactualizados;
     }
 
+    // HU3.2
+    // Flujo: revisa cada criterio aplicado y crea una etiqueta legible para los que tienen valor.
+    // Función: muestra visualmente qué filtros restringen los resultados actuales.
     private IReadOnlyList<string> ObtenerFiltrosActivos()
     {
         var activos = new List<string>();

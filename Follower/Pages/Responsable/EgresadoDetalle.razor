@@ -192,6 +192,9 @@
 	private string? error;
 	private bool cargando = true;
 
+	// HU3.3
+	// Flujo: toma el ID de la ruta, solicita el perfil dentro del alcance autorizado y prepara estados de carga o error.
+	// Función: presenta de forma segura el detalle del egresado seleccionado.
 	protected override async Task OnParametersSetAsync()
 	{
 		cargando = true;
@@ -218,9 +221,15 @@
 		}
 	}
 
+	// HU3.3
+	// Flujo: convierte una fecha opcional a la zona local y sustituye los valores nulos por texto de respaldo.
+	// Función: formatea fechas de secciones del perfil.
 	private static string FormatearFecha(DateTime? fecha) =>
 		fecha?.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture) ?? "Sin registro";
 
+	// HU3.3
+	// Flujo: convierte la fecha obligatoria a la zona local y al formato de presentación.
+	// Función: formatea la fecha de última actualización del perfil.
 	private static string FormatearFecha(DateTime fecha) =>
 		fecha.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture);
 }
