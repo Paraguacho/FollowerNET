@@ -1,19 +1,20 @@
 ﻿@inherits LayoutComponentBase
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="min-h-screen flex flex-col"">
+<div class="min-h-screen flex flex-col">
     <AuthorizeView Roles="ResponsablePrograma">
         <Authorized>
-            <NavBarResponsable/>
+            <NavBarResponsable>
+                <div class="flex-1">@Body</div>
+            </NavBarResponsable>
         </Authorized>
         <NotAuthorized>
-            <NavBar/>
+            <NavBar />
+            <main class="flex-grow">
+                @Body
+            </main>
         </NotAuthorized>
     </AuthorizeView>
-
-    <main class="flex-grow">
-        @Body
-    </main>
 </div>
 
 @code {

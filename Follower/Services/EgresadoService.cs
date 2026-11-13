@@ -49,11 +49,23 @@ namespace Follower.Services
 
         public async Task EliminarExperienciaLaboralAsync (ExperienciaLaboral experiencia)
         {
+            var egresado = await _context.Egresados.FindAsync(experiencia.EgresadoId);
+            if (egresado != null)
+            {
+                egresado.FechaUltimaActualizacion = DateTime.UtcNow;
+            }
+
             _context.ExperienciasLaborales.Remove(experiencia);
             await _context.SaveChangesAsync();
         }
         public async Task EliminarFormacionAcademicaAsync (FormacionAcademica formacion)
         {
+            var egresado = await _context.Egresados.FindAsync(formacion.EgresadoId);
+            if (egresado != null)
+            {
+                egresado.FechaUltimaActualizacion = DateTime.UtcNow;
+            }
+
             _context.FormacionesAcademicas.Remove(formacion);
             await _context.SaveChangesAsync();
         }
@@ -123,7 +135,6 @@ namespace Follower.Services
                     else
                         _context.Entry(egresado.ResumenProductividad).State = EntityState.Modified;
                 }
-
                 _context.Egresados.Update(egresado);
                 await _context.SaveChangesAsync();
             }

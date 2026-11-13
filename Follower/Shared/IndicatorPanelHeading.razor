@@ -1,0 +1,12 @@
+<div class="flex items-center justify-between">
+    <h2 class="text-base font-bold text-gray-900">@Title</h2>
+    <a href="@Target" class="text-xs font-semibold text-[#003366] hover:underline">Ver desglose +</a>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    [Parameter]
+    public string Target { get; set; } = "#pertinencia";
+}

@@ -1,80 +1,84 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider authStateProvider
 @inject NavigationManager NavManager
-@implements IDisposable
 
+<div class="flex min-h-screen w-full bg-gray-50">
+    <aside class="flex w-72 shrink-0 flex-col border-r border-gray-200 bg-slate-900 text-slate-100 shadow-xl">
+        <div class="flex h-16 items-center justify-between border-b border-slate-700 px-5">
+            <span class="cursor-pointer text-lg font-extrabold tracking-tight text-white" @onclick='() => NavManager.NavigateTo("/")'>EGRESADOS</span>
+        </div>
 
+        <div class="flex-1 p-4">
+            <p class="mb-3 text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400">Navegación</p>
+            <nav class="space-y-2">
+                <NavLink href="/responsable" Match="NavLinkMatch.All" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white" ActiveClass="bg-blue-600/20 text-white ring-1 ring-inset ring-blue-500/40">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-700 text-[10px] font-bold">P</span>
+                    Panel de indicadores
+                </NavLink>
 
-<header class="bg-white border-b border-gray-200">
-    <div class="px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16 items-center">
+                <NavLink href="/responsable/egresados" Match="NavLinkMatch.All" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white" ActiveClass="bg-blue-600/20 text-white ring-1 ring-inset ring-blue-500/40">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-700 text-[10px] font-bold">E</span>
+                    Gestión de egresados
+                </NavLink>
 
-            <!-- Logotipo y Menú Principal -->
-            <div class="flex items-center space-x-8">
-                <span class="text-[#003366] font-extrabold text-xl tracking-tight cursor-pointer" @onclick='() => NavManager.NavigateTo("/")'>EGRESADOS</span>
-                    <div class="hidden md:flex space-x-8">
-                        <a href="/responsable" class="@ObtenerClaseActiva("/responsable")">Gestión de egresados</a>
-                        <a href="/responsable/solicitudes" class="@ObtenerClaseActiva("/responsable/solicitudes")">Solicitudes de ingreso</a>
-                        <a href="/responsable/encuestas" class="@ObtenerClaseActiva("/responsable/encuestas")">Encuestas</a>
-                    </div>
-            </div>
-            
-         
-            <!-- Perfil del Responsable HARDCODEADO, MODIFICAR NOMBRE-->
-            <div class="flex items-center space-x-5">
-                <div class="flex items-center space-x-3">
-                    <span class="text-sm text-gray-500">Responsable de programa educativo</span>
-                    <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-[#003366] font-bold text-xs">
-                        RP
+                <NavLink href="/responsable/solicitudes" Match="NavLinkMatch.All" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white" ActiveClass="bg-blue-600/20 text-white ring-1 ring-inset ring-blue-500/40">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-700 text-[10px] font-bold">S</span>
+                    Solicitudes de ingreso
+                </NavLink>
+
+                <NavLink href="/responsable/encuestas" Match="NavLinkMatch.All" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white" ActiveClass="bg-blue-600/20 text-white ring-1 ring-inset ring-blue-500/40">
+                    <span class="inline-flex h-5 w-5 items-center justify-center rounded-md bg-slate-700 text-[10px] font-bold">C</span>
+                    Encuestas
+                </NavLink>
+            </nav>
+        </div>
+
+        <div class="border-t border-slate-700 p-4">
+            <div class="flex items-center justify-between gap-3 rounded-lg bg-slate-800/80 p-3">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-[#003366]">RP</div>
+                    <div>
+                        <p class="text-sm font-semibold text-white">Responsable</p>
+                        <p class="text-[11px] text-slate-400">Programa educativo</p>
                     </div>
                 </div>
 
-                <div class="h-6 w-px bg-gray-300"></div>
-
-                <!-- Cerrar sesion -->
-                <button @onclick="CerrarSesion" class="text-gray-400 hover:text-red-600 transition-colors" title="Cerrar sesión">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button @onclick="CerrarSesion" class="text-slate-300 transition hover:text-red-400" title="Cerrar sesión" aria-label="Cerrar sesión">
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
                     </svg>
                 </button>
             </div>
-
         </div>
+    </aside>
+
+    <div class="flex flex-1 flex-col">
+        <header class="border-b border-gray-200 bg-white">
+            <div class="flex h-16 items-center justify-end px-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-sm text-gray-500">Responsable de programa educativo</span>
+                    <div class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-[#003366]">RP</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-1">
+            @ChildContent
+        </main>
     </div>
-</header>
+</div>
 
 @code {
     [Parameter]
-    public string MenuActivo { get; set; } = "Egresados"; // Egresados / Solicitudes / Encuestas
-
-    private string ObtenerClaseActiva(string ruta)
-    {
-        var rutaActual = new Uri(NavManager.Uri).AbsolutePath;
-        bool esActiva = rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase);
-        return esActiva 
-            ? "text-[#003366] font-medium border-b-2 border-[#003366] pb-4 -mb-4" // Clases activas 
-            : "text-gray-500 hover:text-gray-900 font-medium pb-4 -mb-4 transition-colors"; // Clases inactivas 
-    }
-
-    protected override void OnInitialized()
-    {
-        NavManager.LocationChanged += LocationChanged; 
-    }
-
-    private void LocationChanged(object sender, LocationChangedEventArgs e)
-    {
-        StateHasChanged();
-    }
-
-    public void Dispose()
-    {
-        NavManager.LocationChanged -= LocationChanged;
-    }
+    public RenderFragment? ChildContent { get; set; }
 
     private async Task CerrarSesion()
     {
-        var customAuth = (Follower.Auth.CustomAuthStateProvider)authStateProvider;
-        await customAuth.CerrarSesion();
+        var customAuth = authStateProvider as Follower.Auth.CustomAuthStateProvider;
+        if (customAuth is not null)
+        {
+            await customAuth.CerrarSesion();
+        }
 
         NavManager.NavigateTo("/login", forceLoad: true);
     }

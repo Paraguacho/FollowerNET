@@ -1,0 +1,470 @@
+﻿@page "/responsable"
+@attribute [Authorize(Roles = "ResponsablePrograma")]
+@using System.Globalization
+@using System.Security.Claims
+@using System.Text
+@using Follower.Models
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
+@inject Follower.Data.ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JS
+
+<div class="min-h-screen bg-gray-50 font-sans">
+    <div class="mx-auto max-w-7xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <header class="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+                <p class="text-sm font-semibold uppercase tracking-wider text-[#003366]">Seguimiento de egresados</p>
+                <h1 class="mt-1 text-3xl font-bold text-gray-900">Panel de indicadores</h1>
+                <p class="mt-2 text-sm text-gray-600">Conoce la trayectoria y contribución de los egresados de tu programa educativo.</p>
+            </div>
+            <button type="button" @onclick="GenerarReporte" class="rounded-lg bg-[#003366] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#002244]">Generar reporte</button>
+        </header>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">@error</div>
+        }
+        else if (cargando)
+        {
+            <div class="rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-500">Cargando indicadores...</div>
+        }
+        else
+        {
+            <section class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm" aria-label="Alcance de los indicadores">
+                <div class="mb-4">
+                    <h2 class="text-sm font-bold text-gray-900">Alcance de los indicadores</h2>
+                    <p class="mt-1 text-xs text-gray-500">Los indicadores y sus bases se recalculan al cambiar la generación.</p>
+                </div>
+                <div class="grid gap-4 lg:grid-cols-[1.3fr_1fr_auto_auto] lg:items-end">
+                    <div>
+                        <label class="mb-1 block text-xs font-semibold text-gray-500">Programa educativo</label>
+                        <div class="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-700">
+                            <svg class="h-4 w-4 shrink-0 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2" stroke-width="2" /><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke-width="2" /></svg>
+                            <span>@nombrePrograma</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="mb-1 flex items-center gap-2">
+                            <label for="generation-filter" class="text-xs font-semibold text-gray-500">Generación</label>
+                            <span class="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold tracking-wider text-[#003366]">ACTIVO</span>
+                        </div>
+                        <select id="generation-filter" @bind="generacionSeleccionada" @bind:after="Recalcular" class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-800 focus:border-[#003366] focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <option value="todas">Todas las generaciones</option>
+                            @foreach (var generacion in generaciones)
+                            {
+                                <option value="@generacion.Start">@generacion.Label</option>
+                            }
+                            @if (egresados.Any(x => x.FechaEgreso == null))
+                            {
+                                <option value="sin-generacion">Sin generación registrada</option>
+                            }
+                        </select>
+                    </div>
+                    <button type="button" @onclick="ActualizarIndicadores" class="rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50">Actualizar indicadores</button>
+                    <p class="text-xs text-gray-500 lg:max-w-36">Datos actualizados<br /><strong class="font-semibold text-gray-700">@ultimaActualizacion.ToLocalTime().ToString("dd MMM yyyy, HH:mm", CultureInfo.CurrentCulture)</strong></p>
+                </div>
+            </section>
+
+            <section aria-label="Resumen general">
+                <div class="mb-3 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-900">Resumen general</h2>
+                    <span class="text-xs text-gray-500">Base actual: @poblacion.Count egresados</span>
+                </div>
+                <div class="grid gap-4 md:grid-cols-3">
+                    <article class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                        <p class="text-sm font-medium text-gray-500">Total de egresados</p>
+                        <p class="mt-3 text-3xl font-bold text-gray-900">@poblacion.Count</p>
+                        <p class="mt-2 text-sm text-gray-500">100% de la población <span class="ml-1 text-xs text-gray-400">Base: @poblacion.Count</span></p>
+                    </article>
+                    <article class="rounded-xl border border-blue-100 bg-white p-5 shadow-sm">
+                        <p class="text-sm font-medium text-gray-500">Perfiles actualizados</p>
+                        <p class="mt-3 text-3xl font-bold text-blue-700">@perfilesActualizados <span class="text-base font-semibold">(@Porcentaje(perfilesActualizados, poblacion.Count))</span></p>
+                        <p class="mt-2 text-sm text-gray-500">@perfilesActualizados con actividad reciente sobre @poblacion.Count <span class="text-xs text-gray-400">Base: @poblacion.Count</span></p>
+                    </article>
+                    <article class="rounded-xl border border-orange-100 bg-white p-5 shadow-sm">
+                        <p class="text-sm font-medium text-gray-500">Porcentaje de actualización</p>
+                        <p class="mt-3 text-3xl font-bold text-orange-600">@Porcentaje(perfilesActualizados, poblacion.Count)</p>
+                        <p class="mt-2 text-sm text-gray-500">@perfilesActualizados perfiles actualizados <span class="text-xs text-gray-400">Base: @poblacion.Count</span></p>
+                    </article>
+                </div>
+                <div class="mt-4 flex gap-3 rounded-lg border border-blue-100 bg-blue-50 p-4 text-sm text-blue-900">
+                    <span class="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 font-bold">i</span>
+                    <p><strong>¿Qué cuenta como actualización?</strong> Un perfil cuya fecha de última actualización está dentro de los últimos 12 meses.</p>
+                </div>
+            </section>
+
+            <section class="grid gap-5 lg:grid-cols-2" aria-label="Indicadores de egresados">
+                <article id="generaciones" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Distribución por generación" Target="#generaciones" />
+                    @if (distribucionGeneracion.Count == 0)
+                    {
+                        <div class="mt-5 rounded-lg bg-gray-50 p-4 text-sm text-gray-500">No hay egresados en esta selección. Conteo: 0 · —% · Base: 0.</div>
+                    }
+                    else
+                    {
+                        <div class="mt-5 space-y-4">
+                            @foreach (var item in distribucionGeneracion)
+                            {
+                                <div>
+                                    <div class="mb-1 flex justify-between gap-3 text-sm">
+                                        <span class="text-gray-700">@item.Label</span>
+                                        <span class="font-semibold text-gray-900">@item.Count · @Porcentaje(item.Count, poblacion.Count) · Base: @poblacion.Count</span>
+                                    </div>
+                                    <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full bg-[#003366]" style="width:@AnchoBarra(item.Count, poblacion.Count)"></div></div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </article>
+
+                <article id="situacion-laboral" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Situación laboral" Target="#situacion-laboral" />
+                    <div class="mt-5 space-y-4">
+                        @foreach (var item in situacionLaboral)
+                        {
+                            <div>
+                                <div class="mb-1 flex justify-between gap-3 text-sm"><span class="text-gray-700">@item.Label</span><span class="font-semibold text-gray-900">@item.Count · @Porcentaje(item.Count, poblacion.Count) · Base: @poblacion.Count</span></div>
+                                <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full @item.Color" style="width:@AnchoBarra(item.Count, poblacion.Count)"></div></div>
+                            </div>
+                        }
+                    </div>
+                    @if (sinEmpleo > 0)
+                    {
+                        <div class="mt-5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">Hay @sinEmpleo egresados que reportaron buscar empleo o estudiar exclusivamente. Base: @poblacion.Count.</div>
+                    }
+                </article>
+
+                <article id="sector-empleo" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Sector de empleo" Target="#sector-empleo" />
+                    <p class="mt-1 text-xs text-gray-500">Personas con experiencia laboral registrada en cada sector; una persona puede aparecer en más de uno.</p>
+                    <div class="mt-5 space-y-4">
+                        @foreach (var item in sectoresEmpleo)
+                        {
+                            <div>
+                                <div class="mb-1 flex justify-between gap-3 text-sm"><span class="text-gray-700">@item.Label</span><span class="font-semibold text-gray-900">@item.Count · @Porcentaje(item.Count, poblacion.Count) · Base: @poblacion.Count</span></div>
+                                <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full @item.Color" style="width:@AnchoBarra(item.Count, poblacion.Count)"></div></div>
+                            </div>
+                        }
+                    </div>
+                </article>
+
+                <article id="doctorado" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Trayectoria doctoral" Target="#doctorado" />
+                    <div class="mt-5 grid grid-cols-2 divide-x divide-gray-200 rounded-lg border border-gray-100 bg-gray-50">
+                        <div class="p-5">
+                            <p class="text-sm text-gray-500">Cursan doctorado</p>
+                            <p class="mt-2 text-2xl font-bold text-gray-900">@doctoradoCursando</p>
+                            <p class="mt-1 text-xs text-gray-500">@Porcentaje(doctoradoCursando, poblacion.Count) · Base: @poblacion.Count</p>
+                        </div>
+                        <div class="p-5">
+                            <p class="text-sm text-gray-500">Concluyeron doctorado</p>
+                            <p class="mt-2 text-2xl font-bold text-gray-900">@doctoradoConcluido</p>
+                            <p class="mt-1 text-xs text-gray-500">@Porcentaje(doctoradoConcluido, poblacion.Count) · Base: @poblacion.Count</p>
+                        </div>
+                    </div>
+                </article>
+
+                <article id="becas" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Becas de posgrado" Target="#becas" />
+                    <div class="mt-5 space-y-4">
+                        @foreach (var item in becas)
+                        {
+                            <div>
+                                <div class="mb-1 flex justify-between gap-3 text-sm"><span class="text-gray-700">@item.Label</span><span class="font-semibold text-gray-900">@item.Count · @Porcentaje(item.Count, poblacion.Count) · Base: @poblacion.Count</span></div>
+                                <div class="h-2 overflow-hidden rounded-full bg-gray-100"><div class="h-full rounded-full @item.Color" style="width:@AnchoBarra(item.Count, poblacion.Count)"></div></div>
+                            </div>
+                        }
+                    </div>
+                    <p class="mt-3 text-xs text-gray-500">Clasificación por país registrado en la formación con beca. Base: @poblacion.Count egresados.</p>
+                </article>
+
+                <article id="reconocimientos" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Reconocimientos" Target="#reconocimientos" />
+                    <div class="mt-5 grid grid-cols-2 gap-3">
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"><p class="text-sm font-semibold text-gray-700">SNII</p><p class="mt-3 text-xl font-bold text-gray-400">No disponible</p><p class="mt-1 text-xs text-gray-500">—% · Base: 0 registros</p></div>
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"><p class="text-sm font-semibold text-gray-700">PRODEP</p><p class="mt-3 text-xl font-bold text-gray-400">No disponible</p><p class="mt-1 text-xs text-gray-500">—% · Base: 0 registros</p></div>
+                    </div>
+                </article>
+
+                <article id="publicaciones" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Publicaciones registradas" Target="#publicaciones" />
+                    <div class="mt-5 grid grid-cols-3 gap-3">
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3"><p class="text-xs font-semibold text-gray-700">Artículos</p><p class="mt-2 text-sm font-bold text-gray-400">No disponible</p><p class="mt-1 text-[10px] text-gray-500">—% · Base: 0</p></div>
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3"><p class="text-xs font-semibold text-gray-700">Capítulos</p><p class="mt-2 text-sm font-bold text-gray-400">No disponible</p><p class="mt-1 text-[10px] text-gray-500">—% · Base: 0</p></div>
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3"><p class="text-xs font-semibold text-gray-700">Libros</p><p class="mt-2 text-sm font-bold text-gray-400">No disponible</p><p class="mt-1 text-[10px] text-gray-500">—% · Base: 0</p></div>
+                    </div>
+                </article>
+
+                <article id="contribucion-social" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                    <IndicatorPanelHeading Title="Investigación y contribución social" Target="#contribucion-social" />
+                    <div class="mt-5 grid grid-cols-2 gap-3">
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"><p class="text-sm font-semibold text-gray-700">Egresados participantes</p><p class="mt-3 text-xl font-bold text-gray-400">No disponible</p><p class="mt-1 text-xs text-gray-500">—% · Base: 0 registros</p></div>
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"><p class="text-sm font-semibold text-gray-700">Proyectos / actividades</p><p class="mt-3 text-xl font-bold text-gray-400">No disponible</p><p class="mt-1 text-xs text-gray-500">—% · Base: 0 registros</p></div>
+                    </div>
+                    <div class="mt-4 rounded-lg bg-gray-50 p-3 text-xs text-gray-500">El sistema aún no cuenta con campos para clasificar y desglosar actividades de investigación o contribución social.</div>
+                </article>
+            </section>
+
+            <section id="pertinencia" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                    <div>
+                        <h2 class="text-lg font-bold text-gray-900">Pertinencia de la formación</h2>
+                        <p class="mt-1 text-sm text-gray-500">Indicadores del Módulo 6 a partir de respuestas registradas.</p>
+                    </div>
+                    <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">Base de respuestas: 0</span>
+                </div>
+                <div class="mt-5 grid gap-5 lg:grid-cols-[1fr_1.2fr_0.8fr]">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"><p class="text-sm font-semibold text-gray-700">Puntaje de satisfacción</p><p class="mt-3 text-xl font-bold text-gray-400">No disponible</p><p class="mt-1 text-xs text-gray-500">—% · Base: 0 respuestas</p></div>
+                        <div class="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-4"><p class="text-sm font-semibold text-gray-700">Insatisfecho</p><p class="mt-3 text-xl font-bold text-gray-400">No disponible</p><p class="mt-1 text-xs text-gray-500">—% · Base: 0 respuestas</p></div>
+                        <div class="col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4">
+                            <p class="text-xs font-medium text-gray-500">Utilidad promedio</p>
+                            <p class="mt-2 text-2xl font-bold text-gray-400">— / 5</p>
+                            <p class="mt-1 text-xs text-gray-500">Sin respuestas disponibles · Base: 0</p>
+                        </div>
+                    </div>
+                    <div class="rounded-lg border border-gray-100 p-4">
+                        <h3 class="text-sm font-semibold text-gray-800">Relación de la formación con la actividad profesional</h3>
+                        <div class="mt-4 space-y-4">
+                            @foreach (var nivel in new[] { "Alta", "Media", "Baja" })
+                            {
+                                <div>
+                                    <div class="flex justify-between rounded bg-gray-50 px-3 py-2 text-sm"><span>@nivel</span><span>— · —% · Base: 0</span></div>
+                                    <div class="mt-1 h-2 rounded-full bg-gray-100"></div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <aside class="rounded-lg bg-blue-50 p-4 text-sm text-blue-900">
+                        <p class="font-semibold">Respuestas consideradas</p>
+                        <p class="mt-2 text-2xl font-bold">0</p>
+                        <p class="mt-1 text-xs">No hay una entidad de encuestas ni respuestas del Módulo 6 en el modelo actual.</p>
+                    </aside>
+                </div>
+            </section>
+
+            <footer class="rounded-lg border border-gray-200 bg-gray-100 p-4 text-xs leading-relaxed text-gray-600">
+                <strong class="text-gray-800">Alcance e interpretación:</strong> las cifras se limitan a egresados aprobados de los programas autorizados y a la generación elegida. Los porcentajes se calculan sobre la base indicada; los datos de sector pueden incluir respuestas múltiples. Reconocimientos, publicaciones, proyectos y encuestas se muestran como no disponibles porque aún no existen fuentes para esos datos en el sistema.
+            </footer>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Egresado> egresados = new();
+    private List<Egresado> poblacion = new();
+    private List<GenerationOption> generaciones = new();
+    private List<CountItem> distribucionGeneracion = new();
+    private List<CountItem> situacionLaboral = new();
+    private List<CountItem> sectoresEmpleo = new();
+    private List<CountItem> becas = new();
+    private string? error;
+    private string nombrePrograma = "Programa autorizado";
+    private string generacionSeleccionada = "todas";
+    private bool cargando = true;
+    private int perfilesActualizados;
+    private int sinEmpleo;
+    private int doctoradoCursando;
+    private int doctoradoConcluido;
+    private DateTime ultimaActualizacion;
+
+    protected override async Task OnInitializedAsync() => await CargarDatos();
+
+    private async Task CargarDatos()
+    {
+        cargando = true;
+        error = null;
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            if (!int.TryParse(authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out var usuarioId))
+            {
+                error = "No se pudo identificar la sesión activa.";
+                return;
+            }
+
+            var asignaciones = await DbContext.ProgramasResponsables
+                .AsNoTracking()
+                .Include(x => x.ProgramaEducativo)
+                .Where(x => x.IdUsuario == usuarioId)
+                .ToListAsync();
+            if (asignaciones.Count == 0)
+            {
+                error = "No tienes un programa educativo autorizado.";
+                return;
+            }
+
+            var programaIds = asignaciones.Select(x => x.IdPrograma).Distinct().ToList();
+            nombrePrograma = string.Join(", ", asignaciones
+                .Select(x => $"{x.ProgramaEducativo.NombrePrograma} ({x.ProgramaEducativo.Siglas})")
+                .Distinct());
+            egresados = await DbContext.Egresados
+                .AsNoTracking()
+                .Where(x => programaIds.Contains(x.IdPrograma) && x.EstadoSolicitud == "Aprobado")
+                .Include(x => x.SituacionLaboral)
+                .Include(x => x.ExperienciasLaborales)
+                .Include(x => x.FormacionesAcademicas)
+                .AsSplitQuery()
+                .ToListAsync();
+
+            generaciones = egresados
+                .Where(x => x.FechaEgreso.HasValue)
+                .Select(x => x.FechaEgreso!.Value)
+                .Distinct()
+                .OrderBy(year => year)
+                .Select(year => new GenerationOption(year, $"{year}-{year + 2}"))
+                .ToList();
+            var firstYear = generaciones.FirstOrDefault()?.Start;
+            if (firstYear.HasValue)
+            {
+                generaciones = egresados
+                    .Where(x => x.FechaEgreso.HasValue)
+                    .Select(x => firstYear.Value + ((x.FechaEgreso!.Value - firstYear.Value) / 3) * 3)
+                    .Distinct()
+                    .OrderBy(start => start)
+                    .Select(start => new GenerationOption(start, $"{start}-{start + 2}"))
+                    .ToList();
+            }
+            if (generacionSeleccionada != "todas"
+                && generacionSeleccionada != "sin-generacion"
+                && !generaciones.Any(x => x.Start.ToString(CultureInfo.InvariantCulture) == generacionSeleccionada))
+            {
+                generacionSeleccionada = "todas";
+            }
+
+            ultimaActualizacion = DateTime.UtcNow;
+            Recalcular();
+        }
+        catch (Exception ex)
+        {
+            error = "No se pudieron cargar los indicadores. Inténtalo de nuevo más tarde.";
+            Console.Error.WriteLine($"Error al cargar panel de indicadores: {ex}");
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private void Recalcular()
+    {
+        var generacion = generaciones.FirstOrDefault(x => x.Start.ToString(CultureInfo.InvariantCulture) == generacionSeleccionada);
+        poblacion = generacionSeleccionada switch
+        {
+            "sin-generacion" => egresados.Where(x => !x.FechaEgreso.HasValue).ToList(),
+            "todas" => egresados,
+            _ when generacion != null => egresados.Where(x =>
+                x.FechaEgreso >= generacion.Start
+                && x.FechaEgreso <= generacion.Start + 2).ToList(),
+            _ => egresados
+        };
+
+        var fechaLimite = DateTime.UtcNow.AddMonths(-12);
+        perfilesActualizados = poblacion.Count(x => x.FechaUltimaActualizacion >= fechaLimite);
+        distribucionGeneracion = poblacion
+            .GroupBy(x => x.FechaEgreso.HasValue
+                ? GenerationLabel(x.FechaEgreso.Value)
+                : "Sin generación")
+            .OrderBy(x => x.Key)
+            .Select(x => new CountItem(x.Key, x.Count()))
+            .ToList();
+
+        var conEmpleo = poblacion.Count(ReportaEmpleoVigente);
+        sinEmpleo = poblacion.Count(x => !ReportaEmpleoVigente(x) && EsBusquedaEmpleo(x));
+        var sinInformacion = Math.Max(0, poblacion.Count - conEmpleo - sinEmpleo);
+        situacionLaboral = new List<CountItem>
+        {
+            new("Empleo vigente", conEmpleo),
+            new("Sin empleo", sinEmpleo),
+            new("Sin información", sinInformacion)
+        };
+
+        sectoresEmpleo = new[]
+        {
+            new CountItem("Público", CountProfilesBySector("Público"), "bg-blue-700"),
+            new CountItem("Privado", CountProfilesBySector("Privado"), "bg-indigo-500"),
+            new CountItem("Social", CountProfilesBySector("Social"), "bg-teal-600"),
+            new CountItem("Educativo / otro", CountProfilesBySector("Educativo", "Otro"), "bg-gray-500")
+        }.ToList();
+
+        doctoradoCursando = CountDoctoralProfiles(cursando: true);
+        doctoradoConcluido = CountDoctoralProfiles(cursando: false);
+        var conBeca = poblacion.Where(x => x.FormacionesAcademicas.Any(f => f.RecibioBeca)).ToList();
+        becas = new List<CountItem>
+        {
+            new("Beca nacional", conBeca.Count(x => x.FormacionesAcademicas.Any(f => f.RecibioBeca && EsBecaNacional(f.TipoApoyo))), "bg-[#003366]"),
+            new("Beca internacional", conBeca.Count(x => x.FormacionesAcademicas.Any(f => f.RecibioBeca && EsBecaInternacional(f.TipoApoyo))), "bg-violet-600"),
+            new("Tipo sin clasificar", conBeca.Count(x => x.FormacionesAcademicas.Any(f => f.RecibioBeca && !EsBecaNacional(f.TipoApoyo) && !EsBecaInternacional(f.TipoApoyo))), "bg-gray-400")
+        };
+    }
+
+    private bool ReportaEmpleoVigente(Egresado egresado) =>
+        egresado.ExperienciasLaborales.Any(x => x.EsEmpleoActual)
+        || (egresado.SituacionLaboral?.EstadoActual?.StartsWith("Empleo", StringComparison.OrdinalIgnoreCase) ?? false)
+        || (egresado.SituacionLaboral?.EstadoActual?.StartsWith("Trabajador independiente", StringComparison.OrdinalIgnoreCase) ?? false);
+
+    private bool EsBusquedaEmpleo(Egresado egresado)
+    {
+        var estado = egresado.SituacionLaboral?.EstadoActual;
+        return !string.IsNullOrWhiteSpace(estado)
+            && (estado.Contains("Buscando empleo", StringComparison.OrdinalIgnoreCase)
+                || estado.Contains("Estudiando exclusivamente", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private int CountProfilesBySector(params string[] sectores)
+    {
+        var normalizados = sectores.Select(Normalizar).ToHashSet(StringComparer.Ordinal);
+        return poblacion.Count(e => e.ExperienciasLaborales.Any(x =>
+            x.EsEmpleoActual && x.Sector != null && normalizados.Contains(Normalizar(x.Sector))));
+    }
+
+    private int CountDoctoralProfiles(bool cursando)
+    {
+        return poblacion.Count(e => e.FormacionesAcademicas.Any(f =>
+            string.Equals(f.Grado, "Doctorado", StringComparison.OrdinalIgnoreCase)
+            && (cursando ? f.EsFormacionActual || f.EstadoPrograma?.Contains("cursando", StringComparison.OrdinalIgnoreCase) == true
+                         : !f.EsFormacionActual && f.EstadoPrograma?.Contains("concluí", StringComparison.OrdinalIgnoreCase) == true)));
+    }
+
+    private static bool EsBecaInternacional(string? tipoApoyo) =>
+        Normalizar(tipoApoyo).Contains("internacional", StringComparison.Ordinal);
+
+    private static bool EsBecaNacional(string? tipoApoyo) =>
+        Normalizar(tipoApoyo).Contains("nacional", StringComparison.Ordinal)
+        && !EsBecaInternacional(tipoApoyo);
+
+    private static string Normalizar(string? texto) =>
+        (texto ?? string.Empty).Normalize(NormalizationForm.FormD)
+            .Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
+            .Aggregate(new System.Text.StringBuilder(), (builder, c) => builder.Append(c))
+            .ToString().Normalize(NormalizationForm.FormC).Trim().ToLowerInvariant();
+
+    private static string Porcentaje(int valor, int baseTotal) =>
+        baseTotal == 0 ? "—%" : $"{(double)valor / baseTotal:P0}";
+
+    private string GenerationLabel(int year)
+    {
+        var start = generaciones.FirstOrDefault()?.Start ?? year;
+        var groupStart = start + ((year - start) / 3) * 3;
+        return $"{groupStart}-{groupStart + 2}";
+    }
+
+    private static string AnchoBarra(int valor, int baseTotal) =>
+        $"{(baseTotal == 0 ? 0 : Math.Min((double)valor / baseTotal * 100, 100)):0.##}%";
+
+    private async Task ActualizarIndicadores()
+    {
+        await CargarDatos();
+    }
+
+    private async Task GenerarReporte()
+    {
+        await JS.InvokeVoidAsync("window.print");
+    }
+
+    private sealed record GenerationOption(int Start, string Label);
+    private sealed record CountItem(string Label, int Count, string Color = "bg-[#003366]");
+}
