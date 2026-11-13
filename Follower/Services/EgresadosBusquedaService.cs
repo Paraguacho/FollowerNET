@@ -17,6 +17,14 @@ namespace Follower.Services
 
         private static readonly string[] SectoresDisponibles = { "Público", "Privado", "Educativo" };
         private static readonly string[] NivelesDisponibles = { "Maestría", "Doctorado", "Diplomado", "Especialidad" };
+        private static readonly string[] SituacionesLaboralesDisponibles =
+        {
+            "Empleo de tiempo completo",
+            "Empleo de tiempo medio",
+            "Trabajador independiente / Freelance",
+            "Buscando empleo",
+            "Estudiando exclusivamente"
+        };
 
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly IEgresadosBusquedaRepository _repository;
@@ -42,11 +50,15 @@ namespace Follower.Services
                   AND TRIM(sl.`EstadoActual`) <> ''
                 ORDER BY sl.`EstadoActual`
                 """;
-            var situacionesLaborales = await _repository.EjecutarConsultaAsync(
+            var situacionesRegistradas = await _repository.EjecutarConsultaAsync(
                 sql,
                 new Dictionary<string, object?> { ["IdPrograma"] = programa.IdPrograma },
                 reader => reader.GetString(0),
                 cancellationToken);
+            var situacionesLaborales = SituacionesLaboralesDisponibles
+                .Concat(situacionesRegistradas)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToArray();
 
             return new EgresadosBusquedaOpcionesDto
             {
