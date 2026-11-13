@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Follower.Auth;
 using Microsoft.AspNetCore.Identity;
 using Follower.Services;
+using Follower.Repositories;
 
 
 namespace Follower
@@ -24,6 +25,8 @@ namespace Follower
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
             builder.Services.AddScoped<IEgresadoService,EgresadoService>();            
+            builder.Services.AddScoped<IEgresadosBusquedaRepository, EgresadosBusquedaRepository>();
+            builder.Services.AddScoped<IEgresadosBusquedaService, EgresadosBusquedaService>();
 
 
             var app = builder.Build();
