@@ -32,11 +32,55 @@
                     @if(prod.AnoPublicacion.HasValue) { <span>• @prod.AnoPublicacion </span>}
                 </p>
 
-                //@IF 
-
+                @if (prod.Coautores.Any() || (prod.ParticipoProfesorMied && !string.IsNullOrWhiteSpace(prod.NombreProfesorMied)))
+                {
+                    <div class ="border-t border-slate-100 pt-4 mt-2">
+                        @if (prod.Coautores.Any())
+                        {
+                            <p class="text-[11px] font-bold text-slate-400 mb-2">COAUTORES RECONOCIDOS</p>
+                            <ul class="text-sm text-slate-700 list-disc list-inside mb-3">
+                                @foreach (var coautor in prod.Coautores)
+                                {
+                                    <li>@coautor.Nombres @coautor.ApellidoPaterno (@coautor.Rol) </li>
+                                }
+                            </ul>
+                        }
+                        @if (prod.ParticipoProfesorMied && !string.IsNullOrWhiteSpace(prod.NombreProfesorMied))
+                        {
+                            <div>
+                                <p class="text-[11px] font-bold text-slate-400 mb-0.5">PROFESOR MIED PARTICIPANTE</p>
+                                <p class="text-sm text-slate-800">@prod.NombreProfesorMied</p>
+                            </div>
+                        }
+                    </div>
+                }
             }
         </div>
         
+    }
+    else if (!mostrandoFormulario)
+    {
+        <p class="text-sm text-gray-500 mb-6 italic">No has registrado ninguna publicación o libro.</p>
+    }
+
+    <!-- Form nuevo producto -->
+    @if (mostrandoFormulario)
+    {
+        <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-5">
+            <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar nueva publicación</h3>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de producto</label>
+                <select @bind="nuevoRegistro.TipoProducto" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                    <option value="">Seleccione el tipo de publicación...</option>
+                    <option value="Artículo en revista indexada">Artículo publicado en revista indexada</option>
+                    <option value="Artículo en revista arbitrada">Artículo publicado en revista arbitrada</option>
+                    <option value="Capítulo de libro">Capítulo de libro publicado</option>
+                    <option value="Libro">Libro publicado</option>
+                </select>
+            </div>
+
+
+        </div>
     }
 
 </div>

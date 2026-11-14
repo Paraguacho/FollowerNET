@@ -23,6 +23,7 @@ namespace Follower
             builder.Services.AddServerSideBlazor();
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
+            builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
             builder.Services.AddScoped<IEgresadoService,EgresadoService>();            
 
 

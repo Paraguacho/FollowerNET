@@ -31,6 +31,7 @@ namespace Follower.Models
         public string? ArchivoPdf { get; set; }
 
         //MIED
+        public bool ParticipoProfesorMied { get; set; }
         [MaxLength(200)]
         public string? NombreProfesorMied { get; set; }
 

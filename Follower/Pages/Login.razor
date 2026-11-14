@@ -1,7 +1,8 @@
 ﻿@page "/login"
 @layout MainLayout
 
-@inject Follower.Data.ApplicationDbContext DbContext
+@inject Follower.Services.IAutenticacionService AutenticacionService;
+
 @inject NavigationManager NavManager
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider authStateProvider
@@ -96,67 +97,35 @@
 
     private async Task ProcesarLogin()
     {
-        try
+        var resultado = await AutenticacionService.ValidarLoginAsync(modelo);
+
+        if (!resultado.Exitoso)
         {
-            var usuario = await DbContext.Usuarios
-                .Include(u => u.Rol)
-                .Include(u => u.Egresado)
-                .FirstOrDefaultAsync(u => u.Correo == modelo.Correo);
+            mensajeError = resultado.MensajeError;
+            return;
+        }
+        
+        var customAuthStateProvider = (CustomAuthStateProvider)authStateProvider;
+
+        await customAuthStateProvider.IniciarSesion(
+                    resultado.IdUsuario.ToString(),
+                    resultado.Rol,
+                    resultado.NombreCompleto!
+                );
 
 
+        Console.WriteLine($"Usuario logueado: ID {resultado.IdUsuario} con rol: {resultado.Rol}");
 
-
-            //!BCrypt.Net.BCrypt.Verify(modelo.Contrasena,usuario.ContrasenaHash
-            if (usuario == null || usuario.ContrasenaHash != modelo.Contrasena)
-            {
-                mensajeError = "El correo electrónico o la contraseña son incorrectos. Verifica tus datos e inténtalo de nuevo.";
-                return;
-            }
-
-            if (usuario.Egresado!=null && usuario.Egresado.EstadoSolicitud == "Pendiente")
-            {
-                mensajeError = "Tu cuenta de egresado aún está en proceso de revisión. Te notificaremos por correo cuando sea aprobada.";
-                return;
-            }
-            if (usuario.Egresado != null && usuario.Egresado.EstadoSolicitud == "Rechazado")
-            {
-                mensajeError = $"Tu intento de registro fue rechado por el motivo siguiente: {usuario.Egresado.MotivoRechazo} porfavor comunicate con tu responsable para mas información.";
-                return;
-            }
-
-
-            string nombreCompleto = "Usuario";
-            if (usuario.Egresado != null)
-            {
-                nombreCompleto = $"{usuario.Egresado.Nombres} {usuario.Egresado.ApellidoPaterno} {usuario.Egresado.ApellidoMaterno}".ToUpper().Trim();
-            }
-            else if (usuario.Rol.NombreRol == "ResponsablePrograma")
-            {
-                nombreCompleto = "Responsable";
-            }
-
-
-
-            var customAuthStateProvider = (CustomAuthStateProvider)authStateProvider;
-            await customAuthStateProvider.IniciarSesion(usuario.IdUsuario.ToString(), usuario.Rol.NombreRol, nombreCompleto);
-            Console.WriteLine($"usuario logueado: {usuario.Correo} con rol: {usuario.Rol.NombreRol}");
-            if (usuario.Rol.NombreRol == "ResponsablePrograma")
-            {
-                NavManager.NavigateTo("/responsable/solicitudes");
-            }
-            else
-            {
-                NavManager.NavigateTo("/");
-            }
-
+        if (resultado.Rol == "ResponsablePrograma")
+        {
+            NavManager.NavigateTo("/responsable/solicitudes");
+        }
+        else
+        {
+            NavManager.NavigateTo("/");
+        }
            
            
-        }
-        catch (Exception ex)
-        {
-            mensajeError = "Error al intentar iniciar sesión. Inténtalo mas tarde.";
-            Console.WriteLine(ex.Message);
-        }
     }
 
 }

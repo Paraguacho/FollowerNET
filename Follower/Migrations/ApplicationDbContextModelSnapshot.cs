@@ -469,6 +469,9 @@ namespace Follower.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<bool>("ParticipoProfesorMied")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<string>("RevistaOLibro")
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
