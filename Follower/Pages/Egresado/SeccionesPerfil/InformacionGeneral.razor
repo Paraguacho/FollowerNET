@@ -174,7 +174,7 @@ else
 
 @code {
 
-    public bool cargando = true;
+    private  bool cargando = true;
     private Egresado egresado = new Egresado();
     private string? mensajeNotificacion = null;
 
@@ -203,14 +203,25 @@ else
 
     private async Task GuardarPerfil()
     {
-        await EgresadoService.ActualizarAsync(egresado);
-        mensajeNotificacion = "Tus datos de guardaron exitosamente.";
+        try
+        {
+            await EgresadoService.ActualizarAsync(egresado);
+            await MostrarNotificacion("Tus datos se guardaron exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar perfil: {ex.Message}");
+            await MostrarNotificacion("Ocurrió un error al intentar guardar tus datos.");
+        }
+    }
+
+    private async Task MostrarNotificacion(string mensaje)
+    {
+        mensajeNotificacion = mensaje;
         StateHasChanged();
         await Task.Delay(3000);
         mensajeNotificacion = null;
         StateHasChanged();
-
-
     }
 
 }

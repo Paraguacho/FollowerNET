@@ -431,6 +431,7 @@ else
     private bool cargando = true;
     private Egresado egresado = new Egresado();
     private string? mensajeNotificacion = null;
+
     private bool mostrandoFormEmpleo = false;
     private ExperienciaLaboral nuevoEmpleo = new ExperienciaLaboral();
 
@@ -454,17 +455,25 @@ else
                 }
             }
         }
-        cargando = false; 
+        cargando = false;
     }
 
-    // Guarda el perfil general 
+    // Guarda el perfil general
     private async Task GuardarCambios()
     {
-        await EgresadoService.ActualizarAsync(egresado);
-        await MostrarNotificacion("Situación laboral actualizada exitosamente.");
+        try
+        {
+            await EgresadoService.ActualizarAsync(egresado);
+            await MostrarNotificacion("Situación laboral actualizada exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al actualizar situación laboral: {ex.Message}");
+            await MostrarNotificacion("Error al guardar. Inténtalo de nuevo.");
+        }
     }
 
-    // Lógica de Experiencia Laboral 
+    // Lógica de Experiencia Laboral
     private async Task GuardarEmpleo()
     {
         if (string.IsNullOrWhiteSpace(nuevoEmpleo.Institucion) || string.IsNullOrWhiteSpace(nuevoEmpleo.Puesto))
@@ -473,14 +482,23 @@ else
             return;
         }
 
-        nuevoEmpleo.EgresadoId = egresado.IdEgresado;
-        egresado.ExperienciasLaborales.Add(nuevoEmpleo);
-        
-        await EgresadoService.ActualizarAsync(egresado);
-        
-        nuevoEmpleo = new ExperienciaLaboral(); 
-        mostrandoFormEmpleo = false; 
-        await MostrarNotificacion("Empleo registrado exitosamente.");
+        try
+        {
+            nuevoEmpleo.EgresadoId = egresado.IdEgresado;
+            egresado.ExperienciasLaborales.Add(nuevoEmpleo);
+
+            await EgresadoService.ActualizarAsync(egresado);
+
+            nuevoEmpleo = new ExperienciaLaboral();
+            mostrandoFormEmpleo = false;
+            await MostrarNotificacion("Empleo registrado exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar empleo: {ex.Message}");
+            egresado.ExperienciasLaborales.Remove(nuevoEmpleo); // falló BD
+            await MostrarNotificacion("Error al guardar el empleo.");
+        }
     }
 
     private void CancelarNuevoEmpleo()
@@ -491,17 +509,24 @@ else
 
     private async Task ConfirmarEliminarEmpleo(ExperienciaLaboral empleo)
     {
-        // Si el registro ya existe en BD lo elimina con el servicio
-        if (empleo.IdExperienciaLaboral > 0)
+        try
         {
-            await EgresadoService.EliminarExperienciaLaboralAsync(empleo);
+            if (empleo.IdExperienciaLaboral > 0)
+            {
+                await EgresadoService.EliminarExperienciaLaboralAsync(empleo);
+            }
+
+            egresado.ExperienciasLaborales.Remove(empleo);
+            await MostrarNotificacion("Empleo eliminado.");
         }
-        
-        egresado.ExperienciasLaborales.Remove(empleo);
-        await MostrarNotificacion("Empleo eliminado.");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar empleo: {ex.Message}");
+            await MostrarNotificacion("No se pudo eliminar el empleo.");
+        }
     }
 
-    // Lógica de Formación Académica 
+    // Lógica de Formación Académica
     private async Task GuardarEstudio()
     {
         if (string.IsNullOrWhiteSpace(nuevoEstudio.NombrePrograma))
@@ -510,14 +535,23 @@ else
             return;
         }
 
-        nuevoEstudio.EgresadoId = egresado.IdEgresado;
-        egresado.FormacionesAcademicas.Add(nuevoEstudio);
-        
-        await EgresadoService.ActualizarAsync(egresado);
-        
-        nuevoEstudio = new FormacionAcademica(); 
-        mostrandoFormEstudio = false;
-        await MostrarNotificacion("Estudio registrado exitosamente.");
+        try
+        {
+            nuevoEstudio.EgresadoId = egresado.IdEgresado;
+            egresado.FormacionesAcademicas.Add(nuevoEstudio);
+
+            await EgresadoService.ActualizarAsync(egresado);
+
+            nuevoEstudio = new FormacionAcademica();
+            mostrandoFormEstudio = false;
+            await MostrarNotificacion("Estudio registrado exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar estudio: {ex.Message}");
+            egresado.FormacionesAcademicas.Remove(nuevoEstudio); // falló BD
+            await MostrarNotificacion("Error al guardar el estudio.");
+        }
     }
 
     private void CancelarNuevoEstudio()
@@ -528,16 +562,24 @@ else
 
     private async Task ConfirmarEliminarEstudio(FormacionAcademica estudio)
     {
-        if (estudio.IdFormacionAcademica > 0)
+        try
         {
-            await EgresadoService.EliminarFormacionAcademicaAsync(estudio);
+            if (estudio.IdFormacionAcademica > 0)
+            {
+                await EgresadoService.EliminarFormacionAcademicaAsync(estudio);
+            }
+
+            egresado.FormacionesAcademicas.Remove(estudio);
+            await MostrarNotificacion("Estudio eliminado.");
         }
-        
-        egresado.FormacionesAcademicas.Remove(estudio);
-        await MostrarNotificacion("Estudio eliminado.");
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar estudio: {ex.Message}");
+            await MostrarNotificacion("No se pudo eliminar el estudio.");
+        }
     }
 
-    // alertas
+    // Alertas
     private async Task MostrarNotificacion(string mensaje)
     {
         mensajeNotificacion = mensaje;
