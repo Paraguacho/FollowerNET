@@ -2,7 +2,7 @@
 @attribute [Authorize(Roles= "ResponsablePrograma")]
 @using Microsoft.EntityFrameworkCore
 @using Follower.Models
-@inject Follower.Data.ApplicationDbContext DbContext
+@inject Follower.Services.ISolicitudesIngresoService SolicitudesService;
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Authorization
 
@@ -254,29 +254,22 @@
         int idResponsable = await ObtenerIdResponsableActual();
         if (idResponsable >0 )
         {
-            var asignacion = await DbContext.ProgramasResponsables
-                   .Include(pr => pr.ProgramaEducativo)
-                   .FirstOrDefaultAsync(pr => pr.IdUsuario == idResponsable);
-            if (asignacion != null)
+            programaActual = await SolicitudesService.ObtenerProgramaAsignadoAsync(idResponsable);
+
+            if (programaActual != null)
             {
-                programaActual = asignacion.ProgramaEducativo;
                 await CargarSolicitudes();
             }
-
         }
     }
 
     private async Task CargarSolicitudes()
     {
         if (programaActual == null) return;
-        pendientes = await DbContext.Egresados
-            .Include(e => e.Usuario)
-            .Include(e => e.ProgramaEducativo)
-            .Where(e => e.EstadoSolicitud == "Pendiente" && e.IdPrograma == programaActual.IdPrograma)
-            .OrderBy(e => e.FechaSolicitud)
-            .ToListAsync();
-        //SELECCIONAR Primero
-        if (pendientes.Any() && egresadoSeleccionado==null)
+
+        pendientes = await SolicitudesService.ObtenerSolicitudesPendientesAsync(programaActual.IdPrograma);
+
+        if (pendientes.Any() && egresadoSeleccionado == null)
         {
             egresadoSeleccionado = pendientes.First();
         }
@@ -296,38 +289,18 @@
 
         if (egresadoSeleccionado != null && idResponsable > 0)
         {
-            try
+            var exito = await SolicitudesService.AprobarSolicitudAsync(egresadoSeleccionado.IdEgresado, idResponsable);
+            if (exito)
             {
-                DbContext.ChangeTracker.Clear(); 
+                egresadoSeleccionado = null;
+                await CargarSolicitudes();
+                _ = MostrarNotificacion("El acceso ha sido autorizado correctamente.");
 
-                var egresadoActualizar = await DbContext.Egresados.FindAsync(egresadoSeleccionado.IdEgresado);
-                if (egresadoActualizar != null)
-                {
-                    egresadoActualizar.EstadoSolicitud = "Aprobado";
-                    egresadoActualizar.IdUsuarioResolvio = idResponsable;
-                    egresadoActualizar.FechaResolucion = DateTime.Now;
-                    await DbContext.SaveChangesAsync();
-
-                    egresadoSeleccionado = null;
-                    await CargarSolicitudes();
-                    _ = MostrarNotificacion("El acceso ha sido autorizado correctamente.");
-
-                }
-               
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error de Base Datos al Autorizar: {ex.Message}");
-                if (ex.InnerException != null)
-                {
-                    Console.WriteLine($"DETALLE MYSQL: {ex.InnerException.Message}\n");
-                }
-            }
-
         }
         else
         {
-            Console.WriteLine("Validación fallida: El egresado es null o el idResponsable es 0.");
+            Console.WriteLine("Error: No se pudo aprobar la solicitud en la bvd");
         }
     }
 
@@ -335,8 +308,6 @@
     {
         motivoRechazoSeleccionado = "";
         mostrarModalRechazo = true;
-
-
     }
 
     private void CerrarModalRechazo()
@@ -356,24 +327,18 @@
             Console.WriteLine("Sesion expiro o el localstorage fallo");
             return;
         }
-        try
+        var exito = await SolicitudesService.RechazarSolicitudAsync(egresadoSeleccionado.IdEgresado, idResponsable, motivoRechazoSeleccionado);
+        if (exito)
         {
-            egresadoSeleccionado.EstadoSolicitud = "Rechazado";
-            egresadoSeleccionado.IdUsuarioResolvio = idResponsable;
-            egresadoSeleccionado.FechaResolucion = DateTime.Now;
-            egresadoSeleccionado.MotivoRechazo = string.IsNullOrEmpty(motivoRechazoSeleccionado) ? null : motivoRechazoSeleccionado;
-            await DbContext.SaveChangesAsync();
-
             egresadoSeleccionado = null;
             mostrarModalRechazo = false;
             await CargarSolicitudes();
             _ = MostrarNotificacion("La solicitud fue denegada exitosamente.");
 
         }
-        catch (Exception ex)
+        else
         {
-            Console.WriteLine($"ERROR BD GUARDAR: {ex.Message}");
-
+            Console.WriteLine("Error: No se pudo rechazar la solicitud en la base de datos.");
         }
     }
         

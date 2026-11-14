@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Components.Authorization;
 using Follower.Auth;
 using Microsoft.AspNetCore.Identity;
 using Follower.Services;
+using Follower.Pages.Responsable;
 
 
 namespace Follower
@@ -26,7 +27,7 @@ namespace Follower
             builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
             builder.Services.AddScoped<IEgresadoService,EgresadoService>();
             builder.Services.AddScoped<IRegistroEgresadoService, RegistroEgresadoService>();
-
+            builder.Services.AddScoped<ISolicitudesIngresoService, SolicitudesIngresoService>();
 
             var app = builder.Build();
 
