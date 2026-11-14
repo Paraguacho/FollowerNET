@@ -99,7 +99,7 @@
     {
         var resultado = await AutenticacionService.ValidarLoginAsync(modelo);
 
-        if (!resultado.Exitoso)
+        if (!resultado.Exito)
         {
             mensajeError = resultado.MensajeError;
             return;

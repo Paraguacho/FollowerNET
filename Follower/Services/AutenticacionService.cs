@@ -15,7 +15,7 @@ namespace Follower.Services
 
         public async Task<AutenticacionResultadoDto> ValidarLoginAsync(LoginDto modelo)
         {
-            var resultado = new AutenticacionResultadoDto { Exitoso = false };
+            var resultado = new AutenticacionResultadoDto { Exito = false };
 
             try
             {
@@ -49,7 +49,6 @@ namespace Follower.Services
                     }
                 }
 
-                // Lógica de formateo del nombre
                 string nombreCompleto = "Usuario";
                 if (usuario.Egresado != null)
                 {
@@ -60,8 +59,7 @@ namespace Follower.Services
                     nombreCompleto = "Responsable";
                 }
 
-                // Si pasa todo, es exitoso
-                resultado.Exitoso = true;
+                resultado.Exito = true;
                 resultado.IdUsuario = usuario.IdUsuario;
                 resultado.Rol = usuario.Rol?.NombreRol ?? "SinRol";
                 resultado.NombreCompleto = nombreCompleto;

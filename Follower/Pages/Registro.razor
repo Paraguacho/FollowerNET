@@ -1,8 +1,7 @@
 ﻿@page "/registro"
 @using Microsoft.EntityFrameworkCore;
 @layout MainLayout
-@inject Follower.Data.ApplicationDbContext DbContext
-
+@inject Follower.Services.IRegistroEgresadoService RegistroService;
 <!-- Barra superior -->
 
 @if (registroExitoso)
@@ -164,71 +163,29 @@ else
     private string? mensajeError;
     private bool registroExitoso = false;
 
-    //Guardar los programas de mysql
     private List<Follower.Models.ProgramaEducativo> programasDisponibles = new();
 
     protected override async Task OnInitializedAsync()
     {
-        programasDisponibles = await DbContext.ProgramasEducativos.ToListAsync();
+        programasDisponibles = await RegistroService.ObtenerProgramasDisponiblesAsync();
     }
 
     private async Task ProcesarRegistro()
     {
         mensajeError = null;
-        try
-        {
-            var existeUsuario = DbContext.Usuarios.Any(u => u.Correo == modelo.Correo);
-            if (existeUsuario)
-            {
-                mensajeError = "Este correo electrónico ya se encuentra registrado.";
-                return;
-            }
-            using var transaction = await DbContext.Database.BeginTransactionAsync();
-            try
-            {
-                //2 EGRESADO, 1 RP BCrypt.Net.BCrypt.HashPassword(modelo.Contrasena), 
-                var nuevoUsuario = new Follower.Models.Usuario
-                    {
-                        Correo = modelo.Correo,
-                                    ContrasenaHash = modelo.Contrasena,
-                                    IdRol = 2
-                    };
-                DbContext.Usuarios.Add(nuevoUsuario);
-                await DbContext.SaveChangesAsync();//Guardar IdUsuario
-                var nuevoEgresado = new Follower.Models.Egresado
-                    {
-                        IdUsuario = nuevoUsuario.IdUsuario,
-                        IdPrograma = modelo.IdPrograma,
-                        Nombres = modelo.Nombres,
-                        ApellidoPaterno = modelo.ApellidoPaterno,
-                        ApellidoMaterno = modelo.ApellidoMaterno,
-                        FechaEgreso = modelo.AnoEgreso,
-                        EstadoSolicitud = "Pendiente",
-                        PrivacidadPerfil = "Privado",
-                        FechaSolicitud = DateTime.UtcNow,
-                        FechaAceptacionPrivacidad = DateTime.UtcNow,
-                        FechaUltimaActualizacion = DateTime.UtcNow
-                    };
 
-                DbContext.Egresados.Add(nuevoEgresado);
-                await DbContext.SaveChangesAsync();
+        // Service
+        var resultado = await RegistroService.RegistrarEgresadoAsync(modelo);
 
-                //Confirmar 
-                await transaction.CommitAsync();
-                registroExitoso = true;
-            }
-            catch (Exception)
-            {
-                await transaction.RollbackAsync();
-                mensajeError = "Ocurrió un error al procesar tu registro. Intentalo de nuevo.";
-            }
-        }
-        catch (Exception ex)
+        if (resultado.Exito)
         {
-            mensajeError = "Error de conexión con la bd.";
-            Console.WriteLine(ex.Message);
-            
+            registroExitoso = true;
+            Console.WriteLine($"Registro exitoso para: {modelo.Correo}");
         }
-        Console.WriteLine($"Formulario listo para guardar: {modelo.Correo}");
+        else
+        {
+            mensajeError = resultado.MensajeError;
+        }
     }
+
 }

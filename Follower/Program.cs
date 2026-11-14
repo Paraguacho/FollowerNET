@@ -24,7 +24,8 @@ namespace Follower
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
             builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
-            builder.Services.AddScoped<IEgresadoService,EgresadoService>();            
+            builder.Services.AddScoped<IEgresadoService,EgresadoService>();
+            builder.Services.AddScoped<IRegistroEgresadoService, RegistroEgresadoService>();
 
 
             var app = builder.Build();
