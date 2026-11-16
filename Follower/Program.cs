@@ -28,6 +28,7 @@ namespace Follower
             builder.Services.AddScoped<IEgresadoService,EgresadoService>();
             builder.Services.AddScoped<IRegistroEgresadoService, RegistroEgresadoService>();
             builder.Services.AddScoped<ISolicitudesIngresoService, SolicitudesIngresoService>();
+            builder.Services.AddScoped<IEgresadosBusquedaService, EgresadosBusquedaService>();
 
             var app = builder.Build();
 
