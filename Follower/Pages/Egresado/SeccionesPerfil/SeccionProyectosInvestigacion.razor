@@ -1,0 +1,192 @@
+﻿@using Follower.Models
+@using Follower.Services
+@inject IEgresadoService EgresadoService
+
+<div class="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+    <!-- ACORDEÓN -->
+    <div class="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" @onclick="ToggleExpandido">
+        <h2 class="text-lg font-bold text-gray-900">Proyectos de investigación</h2>
+
+        <div class="flex items-center space-x-4">
+            @if (expandido && !mostrandoFormulario)
+            {
+                <button type="button" @onclick:stopPropagation="true" @onclick="() => mostrandoFormulario = true" class="text-sm font-medium text-[#003366] hover:underline">
+                    + Registrar proyecto
+                </button>
+            }
+            <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200 @(expandido ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </div>
+    </div>
+
+    <!--  ACORDEÓN -->
+    @if (expandido)
+    {
+        <div class="p-6 bg-slate-50 border-t border-gray-200">
+
+            @if (EgresadoModel.ProyectosInvestigacion.Any())
+            {
+                <div class="space-y-4">
+                    @foreach (var proyecto in EgresadoModel.ProyectosInvestigacion)
+                    {
+                        <div class="border border-gray-200 rounded-lg p-5 bg-white relative shadow-sm">
+
+                            <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
+                                <button type="button" class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button type="button" @onclick="() => ConfirmarEliminar(proyecto)" class="hover:text-red-500 transition-colors">Eliminar</button>
+                            </div>
+
+                            <h3 class="font-bold text-slate-900 text-lg mb-1 pr-32 uppercase tracking-wide text-sm">@proyecto.Nombre</h3>
+
+                            <div class="flex items-center text-sm mb-3">
+                                <span class="text-[#003366] font-medium mr-2">@proyecto.Institucion</span>
+                                <span class="text-slate-300 mr-2">|</span>
+                                <span class="text-slate-500">@proyecto.Periodo</span>
+                            </div>
+
+                            <div class="flex space-x-6 border-t border-slate-100 pt-3 mt-2">
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-400 mb-0.5 uppercase">Función</p>
+                                    <p class="text-sm text-slate-800">@proyecto.Funcion</p>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] font-bold text-slate-400 mb-0.5 uppercase">Estado del proyecto</p>
+                                    <p class="text-sm text-slate-800">
+                                        @proyecto.Estado
+                                        @if (proyecto.Estado == "En curso")
+                                        {
+                                            <span class="text-[#003366] font-bold ml-1">(Vigente)</span>
+                                        }
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (!mostrandoFormulario)
+            {
+                <p class="text-sm text-gray-500 italic">No has registrado participación en proyectos de investigación.</p>
+            }
+
+            @if (mostrandoFormulario)
+            {
+                <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-6 shadow-sm mt-4">
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar participación en proyecto</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Nombre del proyecto</label>
+                            <input type="text" @bind="nuevoProyecto.Nombre" placeholder="Ej. Evaluación de metodologías ágiles..." class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Institución responsable</label>
+                            <input type="text" @bind="nuevoProyecto.Institucion" placeholder="Ej. Instituto Tecnológico de Sonora" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Función</label>
+                            <select @bind="nuevoProyecto.Funcion" class="w-full border border-gray-300 rounded-md p-2 text-sm bg-white focus:ring-[#003366] focus:border-[#003366]">
+                                <option value="">Seleccione su función...</option>
+                                <option value="Responsable">Responsable</option>
+                                <option value="Colaborador">Colaborador</option>
+                                <option value="Asistente">Asistente</option>
+                                <option value="Otra">Otra</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Estado del proyecto</label>
+                            <select @bind="nuevoProyecto.Estado" class="w-full border border-gray-300 rounded-md p-2 text-sm bg-white focus:ring-[#003366] focus:border-[#003366]">
+                                <option value="">Seleccione el estado...</option>
+                                <option value="En curso">En curso</option>
+                                <option value="Concluido">Concluido</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-xs text-gray-500 mb-1">Periodo (Año de inicio y término o actual)</label>
+                            <input type="text" @bind="nuevoProyecto.Periodo" placeholder="Ej. Agosto 2025 - Presente" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
+                        <button type="button" @onclick="Cancelar" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
+                        <button type="button" @onclick="Guardar" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar proyecto</button>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Egresado EgresadoModel { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<string> OnNotificar { get; set; }
+
+    private bool expandido = false; 
+    private bool mostrandoFormulario = false;
+    private ProyectoInvestigacion nuevoProyecto = new ProyectoInvestigacion();
+
+    private void ToggleExpandido()
+    {
+        expandido = !expandido;
+    }
+
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoProyecto.Nombre))
+        {
+            await OnNotificar.InvokeAsync("El nombre del proyecto es obligatorio.");
+            return;
+        }
+
+        try
+        {
+            nuevoProyecto.EgresadoId = EgresadoModel.IdEgresado;
+            EgresadoModel.ProyectosInvestigacion.Add(nuevoProyecto);
+            await EgresadoService.ActualizarAsync(EgresadoModel);
+
+            nuevoProyecto = new ProyectoInvestigacion();
+            mostrandoFormulario = false;
+            await OnNotificar.InvokeAsync("Proyecto de investigación registrado exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar proyecto: {ex.Message}");
+            EgresadoModel.ProyectosInvestigacion.Remove(nuevoProyecto);
+            await OnNotificar.InvokeAsync("Error de conexión al guardar el proyecto.");
+        }
+    }
+
+    private void Cancelar()
+    {
+        nuevoProyecto = new ProyectoInvestigacion();
+        mostrandoFormulario = false;
+    }
+
+    private async Task ConfirmarEliminar(ProyectoInvestigacion proyecto)
+    {
+        try
+        {
+            if (proyecto.IdProyecto > 0)
+            {
+                await EgresadoService.EliminarProyectoInvestigacionAsync(proyecto);
+            }
+
+            EgresadoModel.ProyectosInvestigacion.Remove(proyecto);
+            await OnNotificar.InvokeAsync("Proyecto eliminado.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar proyecto: {ex.Message}");
+            await OnNotificar.InvokeAsync("No se pudo eliminar el proyecto.");
+        }
+    }
+}

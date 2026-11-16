@@ -25,6 +25,7 @@ namespace Follower.Services
                 .Include(e => e.ProductividadesCientificas)
                     .ThenInclude(p => p.Coautores)
                 .Include(e => e.ReconocimientosAcademicos)
+                .Include(e => e.ProyectosInvestigacion)
                 .Include(e => e.ContribucionesSociales)
                 .FirstOrDefaultAsync(e=> e.IdUsuario == idUsuario);
 

@@ -1,0 +1,299 @@
+﻿@using Follower.Models
+@using Follower.Services
+@inject IEgresadoService EgresadoService
+
+<div class="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+
+    <!-- CABECERA DEL ACORDEÓN -->
+    <div class="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" @onclick="ToggleExpandido">
+        <h2 class="text-lg font-bold text-gray-900">Distinciones y membresías académicas</h2>
+
+        <div class="flex items-center space-x-4">
+            @if (expandido && !mostrandoFormulario)
+            {
+                <button type="button" @onclick:stopPropagation="true" @onclick="() => mostrandoFormulario = true" class="text-sm font-medium text-[#003366] hover:underline">
+                    + Registrar distinción
+                </button>
+            }
+            <svg class="w-5 h-5 text-gray-500 transform transition-transform duration-200 @(expandido ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+        </div>
+    </div>
+
+    <!-- CONTENIDO DEL ACORDEÓN -->
+    @if (expandido)
+    {
+        <div class="p-6 bg-slate-50 border-t border-gray-200">
+
+            <!-- Lista de Reconocimientos Guardados -->
+            @if (EgresadoModel.ReconocimientosAcademicos.Any())
+            {
+                <div class="space-y-4">
+                    @foreach (var rec in EgresadoModel.ReconocimientosAcademicos)
+                    {
+                        <div class="border border-gray-200 rounded-lg p-5 bg-white relative shadow-sm">
+                            <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
+                                <button type="button" class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button type="button" @onclick="() => ConfirmarEliminar(rec)" class="hover:text-red-500 transition-colors">Eliminar</button>
+                            </div>
+
+                            <p class="text-xs text-[#003366] font-bold mb-1 uppercase tracking-wide">@rec.TipoRegistro</p>
+
+                            @if (!string.IsNullOrEmpty(rec.NombreReconocimiento))
+                            {
+                                <h3 class="font-bold text-slate-900 text-lg mb-1 pr-32">@rec.NombreReconocimiento</h3>
+                            }
+                            else if (!string.IsNullOrEmpty(rec.Nivel))
+                            {
+                                <h3 class="font-bold text-slate-900 text-lg mb-1 pr-32">Nivel: @rec.Nivel</h3>
+                            }
+
+                            @if (!string.IsNullOrEmpty(rec.InstitucionOtorgante))
+                            {
+                                <p class="text-sm text-slate-600 mb-2">@rec.InstitucionOtorgante</p>
+                            }
+
+                            @if (!string.IsNullOrEmpty(rec.MotivoOCategoria))
+                            {
+                                <p class="text-sm text-slate-500 mb-2 italic">@rec.MotivoOCategoria</p>
+                            }
+
+                            <div class="flex flex-wrap gap-x-6 gap-y-2 border-t border-slate-100 pt-3 mt-2">
+                                @if (rec.AnoInicio > 0)
+                                {
+                                    <div>
+                                        <p class="text-[11px] font-bold text-slate-400 mb-0.5 uppercase">
+                                            @(rec.TipoRegistro == "Premio o Distinción" || rec.TipoRegistro == "Certificación" ? "Año de obtención" : "Año inicio")
+                                        </p>
+                                        <p class="text-sm text-slate-800">@rec.AnoInicio</p>
+                                    </div>
+                                }
+                                @if (rec.AnoFin > 0) 
+                                {
+                                    <div>
+                                        <p class="text-[11px] font-bold text-slate-400 mb-0.5 uppercase">Año término / Vigencia</p>
+                                        <p class="text-sm text-slate-800">@rec.AnoFin</p>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(rec.TipoParticipacion))
+                                {
+                                    <div>
+                                        <p class="text-[11px] font-bold text-slate-400 mb-0.5 uppercase">Participación</p>
+                                        <p class="text-sm text-slate-800">@rec.TipoParticipacion</p>
+                                    </div>
+                                }
+                                @if (!string.IsNullOrEmpty(rec.EstadoActual))
+                                {
+                                    <div>
+                                        <p class="text-[11px] font-bold text-slate-400 mb-0.5 uppercase">Situación actual</p>
+                                        <p class="text-sm text-slate-800">@rec.EstadoActual</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (!mostrandoFormulario)
+            {
+                <p class="text-sm text-gray-500 italic">No has registrado premios, certificaciones o membresías.</p>
+            }
+
+            <!-- Formulario de Nuevo Registro -->
+            @if (mostrandoFormulario)
+            {
+                <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-6 shadow-sm mt-4">
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registro de distinciones y membresías</h3>
+
+                    <div class="mb-4">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de registro</label>
+                        <select @bind="nuevoRegistro.TipoRegistro" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                            <option value="">Seleccione una opción...</option>
+                            <option value="Sistema Nacional de Investigadores (SNII)">Sistema Nacional de Investigadores (SNII)</option>
+                            <option value="Reconocimiento PRODEP">Reconocimiento PRODEP</option>
+                            <option value="Premio o Distinción">Premio o distinción académica/profesional</option>
+                            <option value="Certificación">Certificación o acreditación profesional</option>
+                            <option value="Membresía">Membresía en asociaciones o redes</option>
+                        </select>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(nuevoRegistro.TipoRegistro))
+                    {
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+
+                            <!-- Campos para SNII -->
+                            @if (nuevoRegistro.TipoRegistro.Contains("SNII"))
+                            {
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs text-gray-500 mb-1">Nivel obtenido</label>
+                                    <select @bind="nuevoRegistro.Nivel" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                                        <option value="">Seleccione un nivel...</option>
+                                        <option value="Candidato(a)">Candidato(a)</option>
+                                        <option value="Nivel I">Nivel I</option>
+                                        <option value="Nivel II">Nivel II</option>
+                                        <option value="Nivel III">Nivel III</option>
+                                        <option value="Emérito(a)">Emérito(a)</option>
+                                    </select>
+                                </div>
+                            }
+
+                            <!-- Campos para Premios, Certificaciones y Membresías -->
+                            @if (nuevoRegistro.TipoRegistro == "Premio o Distinción" || nuevoRegistro.TipoRegistro == "Certificación" || nuevoRegistro.TipoRegistro == "Membresía")
+                            {
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs text-gray-500 mb-1">
+                                        @(nuevoRegistro.TipoRegistro == "Membresía" ? "Nombre de la organización (AMC, COMIE, etc.)" : "Nombre de la distinción / certificación")
+                                    </label>
+                                    <input type="text" @bind="nuevoRegistro.NombreReconocimiento" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs text-gray-500 mb-1">Institución u organismo otorgante</label>
+                                    <input type="text" @bind="nuevoRegistro.InstitucionOtorgante" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                </div>
+                            }
+
+                            <!-- Campo opcional para Premios -->
+                            @if (nuevoRegistro.TipoRegistro == "Premio o Distinción")
+                            {
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs text-gray-500 mb-1">Motivo o categoría (Opcional)</label>
+                                    <input type="text" @bind="nuevoRegistro.MotivoOCategoria" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                </div>
+                            }
+
+                            <!-- Campo específico de Rol para Membresía -->
+                            @if (nuevoRegistro.TipoRegistro == "Membresía")
+                            {
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Tipo de participación</label>
+                                    <select @bind="nuevoRegistro.TipoParticipacion" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                                        <option value="">Seleccione...</option>
+                                        <option value="Miembro">Miembro</option>
+                                        <option value="Integrante de comité">Integrante de comité o comisión</option>
+                                        <option value="Integrante directivo">Integrante de consejo directivo</option>
+                                        <option value="Coordinador(a)">Coordinador(a)</option>
+                                        <option value="Presidente(a)">Presidente(a)</option>
+                                        <option value="Otro">Otro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Situación actual</label>
+                                    <select @bind="nuevoRegistro.EstadoActual" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                                        <option value="">Seleccione...</option>
+                                        <option value="Vigente">Vigente</option>
+                                        <option value="Concluida">Concluida</option>
+                                    </select>
+                                </div>
+                            }
+
+                            <!-- Fechas (Comunes) -->
+                            <div>
+                                <label class="block text-xs text-gray-500 mb-1">
+                                    @(nuevoRegistro.TipoRegistro == "Premio o Distinción" || nuevoRegistro.TipoRegistro == "Certificación" ? "Año de obtención" : "Año de inicio / ingreso")
+                                </label>
+                                <input type="number" @bind="nuevoRegistro.AnoInicio" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                            </div>
+
+                            @if (nuevoRegistro.TipoRegistro != "Premio o Distinción")
+                            {
+                                <div>
+                                    <label class="block text-xs text-gray-500 mb-1">Año de término / Vigencia</label>
+                                    <input type="number" @bind="nuevoRegistro.AnoFin" placeholder="Dejar en blanco si es vigente" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                </div>
+                            }
+
+                            <!-- Carga de Evidencia -->
+                            <div class="md:col-span-2 mt-2">
+                                <label class="block text-xs text-gray-500 mb-1">Constancia o evidencia (Opcional)</label>
+                                <div class="flex items-center justify-center w-full">
+                                    <label class="flex flex-col items-center justify-center w-full h-16 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                                        <div class="flex flex-col items-center justify-center pt-2 pb-2">
+                                            <p class="text-xs text-gray-500"><span class="font-semibold">Adjuntar PDF</span> (Max. 5MB)</p>
+                                        </div>
+                                        <!-- En el futuro, aquí podrás hacer un bind al nombre de archivo nuevoRegistro.ArchivoEvidencia después de subirlo -->
+                                        <input type="file" class="hidden" accept=".pdf" />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
+                            <button type="button" @onclick="Cancelar" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
+                            <button type="button" @onclick="Guardar" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar registro</button>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public Egresado EgresadoModel { get; set; } = null!;
+
+    [Parameter]
+    public EventCallback<string> OnNotificar { get; set; }
+
+    private bool expandido = false;
+    private bool mostrandoFormulario = false;
+    private ReconocimientoAcademico nuevoRegistro = new ReconocimientoAcademico();
+
+    private void ToggleExpandido()
+    {
+        expandido = !expandido;
+    }
+
+    private async Task Guardar()
+    {
+        if (string.IsNullOrWhiteSpace(nuevoRegistro.TipoRegistro))
+        {
+            await OnNotificar.InvokeAsync("Debes seleccionar un tipo de registro.");
+            return;
+        }
+
+        try
+        {
+            nuevoRegistro.EgresadoId = EgresadoModel.IdEgresado;
+            EgresadoModel.ReconocimientosAcademicos.Add(nuevoRegistro);
+
+            await EgresadoService.ActualizarAsync(EgresadoModel);
+
+            nuevoRegistro = new ReconocimientoAcademico();
+            mostrandoFormulario = false;
+            await OnNotificar.InvokeAsync("Registro guardado exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar distinción: {ex.Message}");
+            EgresadoModel.ReconocimientosAcademicos.Remove(nuevoRegistro);
+            await OnNotificar.InvokeAsync("Error de conexión al guardar.");
+        }
+    }
+
+    private void Cancelar()
+    {
+        nuevoRegistro = new ReconocimientoAcademico();
+        mostrandoFormulario = false;
+    }
+
+    private async Task ConfirmarEliminar(ReconocimientoAcademico rec)
+    {
+        try
+        {
+            if (rec.IdReconomiento > 0)
+            {
+                await EgresadoService.EliminarReconocimientoAcademicoAsync(rec);
+            }
+
+            EgresadoModel.ReconocimientosAcademicos.Remove(rec);
+            await OnNotificar.InvokeAsync("Registro eliminado.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar distinción: {ex.Message}");
+            await OnNotificar.InvokeAsync("No se pudo eliminar el registro.");
+        }
+    }
+}

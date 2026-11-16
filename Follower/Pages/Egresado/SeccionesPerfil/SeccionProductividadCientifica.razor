@@ -4,7 +4,7 @@
 
 <div class="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 
-    <!-- CABECERA DEL ACORDEÓN -->
+    <!-- CABECERA -->
     <div class="px-6 py-4 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors" @onclick="ToggleExpandido">
         <h2 class="text-lg font-bold text-gray-900">Productividad científica</h2>
 
@@ -24,13 +24,13 @@
     @if (expandido)
     {
         <div class="p-6 bg-slate-50 border-t border-gray-200">
-            <!-- Lista de Productos Guardados -->
+            <!--  Productos Guardados -->
             @if (EgresadoModel.ProductividadesCientificas.Any())
             {
                 <div class="space-y-4">
                     @foreach (var prod in EgresadoModel.ProductividadesCientificas)
                     {
-                        <!-- TARJETA INDIVIDUAL BLANCA -->
+                        <!-- TARJETA  -->
                         <div class="border border-gray-200 rounded-lg p-5 bg-white relative shadow-sm">
                             <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
                                 <button type="button" class="hover:text-slate-600 transition-colors">Editar</button>
@@ -77,10 +77,8 @@
                 <p class="text-sm text-gray-500 italic">No has registrado ninguna publicación o libro.</p>
             }
 
-            <!-- Formulario de Nuevo Producto (Se mantiene igual) -->
             @if (mostrandoFormulario)
             {
-                <!-- Aquí va exactamente el mismo formulario que ya tenías: <div class="border border-blue-100 bg-[#fbfdff]... -->
                 <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-6 shadow-sm mt-4">
                     <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar nueva publicación</h3>
                     
