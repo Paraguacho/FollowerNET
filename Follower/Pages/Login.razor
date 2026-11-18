@@ -1,11 +1,11 @@
 ﻿@page "/login"
 @layout MainLayout
-
 @inject Follower.Services.IAutenticacionService AutenticacionService;
 
 @inject NavigationManager NavManager
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager Navigation
 @using Follower.Auth
 
 @using Microsoft.EntityFrameworkCore
@@ -94,6 +94,16 @@
 @code {
     private Follower.DTOs.LoginDto modelo = new Follower.DTOs.LoginDto();
     private string? mensajeError = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity is { IsAuthenticated: true })
+        {
+            Navigation.NavigateTo("/", forceLoad: false);
+        }
+    }
+
 
     private async Task ProcesarLogin()
     {

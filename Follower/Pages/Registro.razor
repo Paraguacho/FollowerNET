@@ -1,7 +1,12 @@
 ﻿@page "/registro"
-@using Microsoft.EntityFrameworkCore;
 @layout MainLayout
 @inject Follower.Services.IRegistroEgresadoService RegistroService;
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider authStateProvider
+@inject NavigationManager Navigation
+
+
 <!-- Barra superior -->
 
 @if (registroExitoso)
@@ -166,7 +171,12 @@ else
     private List<Follower.Models.ProgramaEducativo> programasDisponibles = new();
 
     protected override async Task OnInitializedAsync()
-    {
+    {   
+        var authState = await authStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity is { IsAuthenticated: true })
+        {
+            Navigation.NavigateTo("/", forceLoad: false);
+        }
         programasDisponibles = await RegistroService.ObtenerProgramasDisponiblesAsync();
     }
 

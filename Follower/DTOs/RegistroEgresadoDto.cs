@@ -28,6 +28,7 @@ namespace Follower.DTOs
         public string Contrasena { get; set;  } = string.Empty;
 
         [Required(ErrorMessage ="Selecciona un programa educativo")]
+        [Range(1, int.MaxValue, ErrorMessage = "Por favor, selecciona un programa de egreso válido.")]
         [Display(Name ="Programa de egreso")]
         public int IdPrograma { get; set; }
 
