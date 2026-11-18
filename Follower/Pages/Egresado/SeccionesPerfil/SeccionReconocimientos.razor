@@ -11,7 +11,7 @@
         <div class="flex items-center space-x-4">
             @if (expandido && !mostrandoFormulario)
             {
-                <button type="button" @onclick:stopPropagation="true" @onclick="() => mostrandoFormulario = true" class="text-sm font-medium text-[#003366] hover:underline">
+                <button type="button" @onclick:stopPropagation="true" @onclick="AbrirNuevoFormulario" class="text-sm font-medium text-[#003366] hover:underline">
                     + Registrar distinción
                 </button>
             }
@@ -34,7 +34,7 @@
                     {
                         <div class="border border-gray-200 rounded-lg p-5 bg-white relative shadow-sm">
                             <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
-                                <button type="button" class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button type="button" @onclick="() => IniciarEdicion(rec)" class="hover:text-slate-600 transition-colors">Editar</button>
                                 <button type="button" @onclick="() => ConfirmarEliminar(rec)" class="hover:text-red-500 transition-colors">Eliminar</button>
                             </div>
 
@@ -69,7 +69,7 @@
                                         <p class="text-sm text-slate-800">@rec.AnoInicio</p>
                                     </div>
                                 }
-                                @if (rec.AnoFin > 0) 
+                                @if (rec.AnoFin > 0)
                                 {
                                     <div>
                                         <p class="text-[11px] font-bold text-slate-400 mb-0.5 uppercase">Año término / Vigencia</p>
@@ -100,15 +100,17 @@
                 <p class="text-sm text-gray-500 italic">No has registrado premios, certificaciones o membresías.</p>
             }
 
-            <!-- Formulario de Nuevo Registro -->
+            <!-- Formulario de Nuevo Registro / Edición -->
             @if (mostrandoFormulario)
             {
                 <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-6 shadow-sm mt-4">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registro de distinciones y membresías</h3>
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">
+                        @(registroEnEdicion != null ? "Editar distinción o membresía" : "Registro de distinciones y membresías")
+                    </h3>
 
                     <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de registro</label>
-                        <select @bind="nuevoRegistro.TipoRegistro" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de registro *</label>
+                        <select @bind="nuevoRegistro.TipoRegistro" class="w-full border @(TieneError("TipoRegistro") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
                             <option value="">Seleccione una opción...</option>
                             <option value="Sistema Nacional de Investigadores (SNII)">Sistema Nacional de Investigadores (SNII)</option>
                             <option value="Reconocimiento PRODEP">Reconocimiento PRODEP</option>
@@ -116,6 +118,10 @@
                             <option value="Certificación">Certificación o acreditación profesional</option>
                             <option value="Membresía">Membresía en asociaciones o redes</option>
                         </select>
+                        @if (TieneError("TipoRegistro"))
+                        {
+                            <p class="text-red-500 text-xs mt-1">@errores["TipoRegistro"]</p>
+                        }
                     </div>
 
                     @if (!string.IsNullOrEmpty(nuevoRegistro.TipoRegistro))
@@ -126,8 +132,8 @@
                             @if (nuevoRegistro.TipoRegistro.Contains("SNII"))
                             {
                                 <div class="md:col-span-2">
-                                    <label class="block text-xs text-gray-500 mb-1">Nivel obtenido</label>
-                                    <select @bind="nuevoRegistro.Nivel" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                                    <label class="block text-xs text-gray-500 mb-1">Nivel obtenido *</label>
+                                    <select @bind="nuevoRegistro.Nivel" class="w-full border @(TieneError("Nivel") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
                                         <option value="">Seleccione un nivel...</option>
                                         <option value="Candidato(a)">Candidato(a)</option>
                                         <option value="Nivel I">Nivel I</option>
@@ -135,6 +141,10 @@
                                         <option value="Nivel III">Nivel III</option>
                                         <option value="Emérito(a)">Emérito(a)</option>
                                     </select>
+                                    @if (TieneError("Nivel"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["Nivel"]</p>
+                                    }
                                 </div>
                             }
 
@@ -143,13 +153,21 @@
                             {
                                 <div class="md:col-span-2">
                                     <label class="block text-xs text-gray-500 mb-1">
-                                        @(nuevoRegistro.TipoRegistro == "Membresía" ? "Nombre de la organización (AMC, COMIE, etc.)" : "Nombre de la distinción / certificación")
+                                        @(nuevoRegistro.TipoRegistro == "Membresía" ? "Nombre de la organización (AMC, COMIE, etc.) *" : "Nombre de la distinción / certificación *")
                                     </label>
-                                    <input type="text" @bind="nuevoRegistro.NombreReconocimiento" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    <input type="text" @bind="nuevoRegistro.NombreReconocimiento" class="w-full border @(TieneError("NombreReconocimiento") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    @if (TieneError("NombreReconocimiento"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["NombreReconocimiento"]</p>
+                                    }
                                 </div>
                                 <div class="md:col-span-2">
-                                    <label class="block text-xs text-gray-500 mb-1">Institución u organismo otorgante</label>
-                                    <input type="text" @bind="nuevoRegistro.InstitucionOtorgante" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    <label class="block text-xs text-gray-500 mb-1">Institución u organismo otorgante *</label>
+                                    <input type="text" @bind="nuevoRegistro.InstitucionOtorgante" class="w-full border @(TieneError("InstitucionOtorgante") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    @if (TieneError("InstitucionOtorgante"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["InstitucionOtorgante"]</p>
+                                    }
                                 </div>
                             }
 
@@ -166,8 +184,8 @@
                             @if (nuevoRegistro.TipoRegistro == "Membresía")
                             {
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Tipo de participación</label>
-                                    <select @bind="nuevoRegistro.TipoParticipacion" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                                    <label class="block text-xs text-gray-500 mb-1">Tipo de participación *</label>
+                                    <select @bind="nuevoRegistro.TipoParticipacion" class="w-full border @(TieneError("TipoParticipacion") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
                                         <option value="">Seleccione...</option>
                                         <option value="Miembro">Miembro</option>
                                         <option value="Integrante de comité">Integrante de comité o comisión</option>
@@ -176,30 +194,51 @@
                                         <option value="Presidente(a)">Presidente(a)</option>
                                         <option value="Otro">Otro</option>
                                     </select>
+                                    @if (TieneError("TipoParticipacion"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["TipoParticipacion"]</p>
+                                    }
                                 </div>
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Situación actual</label>
-                                    <select @bind="nuevoRegistro.EstadoActual" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                                    <label class="block text-xs text-gray-500 mb-1">Situación actual *</label>
+                                    <select @bind="nuevoRegistro.EstadoActual" class="w-full border @(TieneError("EstadoActual") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
                                         <option value="">Seleccione...</option>
                                         <option value="Vigente">Vigente</option>
                                         <option value="Concluida">Concluida</option>
                                     </select>
+                                    @if (TieneError("EstadoActual"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["EstadoActual"]</p>
+                                    }
                                 </div>
                             }
 
                             <!-- Fechas (Comunes) -->
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">
-                                    @(nuevoRegistro.TipoRegistro == "Premio o Distinción" || nuevoRegistro.TipoRegistro == "Certificación" ? "Año de obtención" : "Año de inicio / ingreso")
+                                    @(nuevoRegistro.TipoRegistro == "Premio o Distinción" || nuevoRegistro.TipoRegistro == "Certificación" ? "Fecha de obtención *" : "Fecha de inicio / ingreso *")
                                 </label>
-                                <input type="number" @bind="nuevoRegistro.AnoInicio" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                <input type="date" @bind="fechaInicioTemp"
+                                       class="w-full border @(TieneError("AnoInicio") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                @if (TieneError("AnoInicio"))
+                                {
+                                    <p class="text-red-500 text-xs mt-1">@errores["AnoInicio"]</p>
+                                }
                             </div>
 
                             @if (nuevoRegistro.TipoRegistro != "Premio o Distinción")
                             {
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Año de término / Vigencia</label>
-                                    <input type="number" @bind="nuevoRegistro.AnoFin" placeholder="Dejar en blanco si es vigente" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    <label class="block text-xs text-gray-500 mb-1">
+                                        Fecha de término / Vigencia @(nuevoRegistro.TipoRegistro == "Membresía" && nuevoRegistro.EstadoActual == "Concluida" ? "*" : "(Opcional si es vigente)")
+                                    </label>
+                                    <input type="date" @bind="fechaFinTemp"
+                                           disabled="@(nuevoRegistro.TipoRegistro == "Membresía" && nuevoRegistro.EstadoActual == "Vigente")"
+                                           class="w-full border @(TieneError("AnoFin") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] disabled:bg-gray-100 disabled:text-gray-400" />
+                                    @if (TieneError("AnoFin"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["AnoFin"]</p>
+                                    }
                                 </div>
                             }
 
@@ -211,7 +250,6 @@
                                         <div class="flex flex-col items-center justify-center pt-2 pb-2">
                                             <p class="text-xs text-gray-500"><span class="font-semibold">Adjuntar PDF</span> (Max. 5MB)</p>
                                         </div>
-                                        <!-- En el futuro, aquí podrás hacer un bind al nombre de archivo nuevoRegistro.ArchivoEvidencia después de subirlo -->
                                         <input type="file" class="hidden" accept=".pdf" />
                                     </label>
                                 </div>
@@ -220,7 +258,9 @@
 
                         <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
                             <button type="button" @onclick="Cancelar" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
-                            <button type="button" @onclick="Guardar" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar registro</button>
+                            <button type="button" @onclick="Guardar" disabled="@guardando" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244] disabled:opacity-50">
+                                @(registroEnEdicion != null ? "Actualizar registro" : "Guardar registro")
+                            </button>
                         </div>
                     }
                 </div>
@@ -238,43 +278,200 @@
 
     private bool expandido = false;
     private bool mostrandoFormulario = false;
-    private ReconocimientoAcademico nuevoRegistro = new ReconocimientoAcademico();
+    private bool guardando = false;
+    private DateTime? fechaInicioTemp;
+    private DateTime? fechaFinTemp;
+    private ReconocimientoAcademico nuevoRegistro = new();
+    private ReconocimientoAcademico? registroEnEdicion = null;
+    private Dictionary<string, string> errores = new();
 
-    private void ToggleExpandido()
+    private void ToggleExpandido() => expandido = !expandido;
+
+    private bool TieneError(string campo) => errores.ContainsKey(campo);
+
+    private void AbrirNuevoFormulario()
     {
-        expandido = !expandido;
+        errores.Clear();
+        registroEnEdicion = null;
+        nuevoRegistro = new ReconocimientoAcademico();
+        fechaInicioTemp = null;
+        fechaFinTemp = null;
+        mostrandoFormulario = true;
+    }
+
+    private void IniciarEdicion(ReconocimientoAcademico rec)
+    {
+        errores.Clear();
+        registroEnEdicion = rec;
+        nuevoRegistro = new ReconocimientoAcademico
+        {
+            IdReconomiento = rec.IdReconomiento,
+            EgresadoId = rec.EgresadoId,
+            TipoRegistro = rec.TipoRegistro,
+            Nivel = rec.Nivel,
+            AnoInicio = rec.AnoInicio,
+            AnoFin = rec.AnoFin,
+            NombreReconocimiento = rec.NombreReconocimiento,
+            InstitucionOtorgante = rec.InstitucionOtorgante,
+            MotivoOCategoria = rec.MotivoOCategoria,
+            TipoParticipacion = rec.TipoParticipacion,
+            EstadoActual = rec.EstadoActual,
+            ArchivoEvidencia = rec.ArchivoEvidencia
+        };
+
+        fechaInicioTemp = rec.AnoInicio is >= 1950 and <= 2100 ? new DateTime(rec.AnoInicio.Value, 1, 1) : null;
+        fechaFinTemp = rec.AnoFin is >= 1950 and <= 2100 ? new DateTime(rec.AnoFin, 1, 1) : null;
+        mostrandoFormulario = true;
+    }
+
+    private bool ValidarFormulario()
+    {
+        errores.Clear();
+
+        if (string.IsNullOrWhiteSpace(nuevoRegistro.TipoRegistro))
+            errores["TipoRegistro"] = "Debes seleccionar un tipo de registro.";
+
+        if (nuevoRegistro.TipoRegistro.Contains("SNII") && string.IsNullOrWhiteSpace(nuevoRegistro.Nivel))
+            errores["Nivel"] = "El nivel obtenido es obligatorio.";
+
+        if (nuevoRegistro.TipoRegistro == "Premio o Distinción"
+            || nuevoRegistro.TipoRegistro == "Certificación"
+            || nuevoRegistro.TipoRegistro == "Membresía")
+        {
+            if (string.IsNullOrWhiteSpace(nuevoRegistro.NombreReconocimiento))
+                errores["NombreReconocimiento"] = "Este campo es obligatorio.";
+
+            if (string.IsNullOrWhiteSpace(nuevoRegistro.InstitucionOtorgante))
+                errores["InstitucionOtorgante"] = "La institución u organismo otorgante es obligatorio.";
+        }
+
+        if (nuevoRegistro.TipoRegistro == "Membresía")
+        {
+            if (string.IsNullOrWhiteSpace(nuevoRegistro.TipoParticipacion))
+                errores["TipoParticipacion"] = "El tipo de participación es obligatorio.";
+
+            if (string.IsNullOrWhiteSpace(nuevoRegistro.EstadoActual))
+                errores["EstadoActual"] = "La situación actual es obligatoria.";
+        }
+
+        if (!fechaInicioTemp.HasValue)
+            errores["AnoInicio"] = "La fecha de inicio es obligatoria.";
+
+        if (nuevoRegistro.TipoRegistro == "Membresía" && nuevoRegistro.EstadoActual == "Concluida" && !fechaFinTemp.HasValue)
+            errores["AnoFin"] = "La fecha de término es obligatoria si la membresía concluyó.";
+
+        if (nuevoRegistro.TipoRegistro != "Premio o Distinción" && fechaInicioTemp.HasValue && fechaFinTemp.HasValue)
+        {
+            if (fechaFinTemp.Value < fechaInicioTemp.Value)
+                errores["AnoFin"] = "La fecha de término no puede ser anterior a la de inicio.";
+        }
+
+        return !errores.Any();
     }
 
     private async Task Guardar()
     {
-        if (string.IsNullOrWhiteSpace(nuevoRegistro.TipoRegistro))
+        if (guardando) return;
+
+        if (!ValidarFormulario())
         {
-            await OnNotificar.InvokeAsync("Debes seleccionar un tipo de registro.");
+            await OnNotificar.InvokeAsync("Completa todos los campos obligatorios marcados en rojo.");
             return;
         }
 
+        guardando = true;
+
+        var esEdicion = registroEnEdicion != null;
+        var target = registroEnEdicion;
+        var copiaNuevo = nuevoRegistro;
+        ReconocimientoAcademico? respaldo = null;
+
+        copiaNuevo.AnoInicio = fechaInicioTemp!.Value.Year;
+        copiaNuevo.AnoFin = (nuevoRegistro.TipoRegistro == "Premio o Distinción"
+            || (nuevoRegistro.TipoRegistro == "Membresía" && nuevoRegistro.EstadoActual == "Vigente")
+            || !fechaFinTemp.HasValue)
+            ? 0
+            : fechaFinTemp.Value.Year;
+
+        if (esEdicion && target != null)
+        {
+            respaldo = new ReconocimientoAcademico
+            {
+                TipoRegistro = target.TipoRegistro,
+                Nivel = target.Nivel,
+                AnoInicio = target.AnoInicio,
+                AnoFin = target.AnoFin,
+                NombreReconocimiento = target.NombreReconocimiento,
+                InstitucionOtorgante = target.InstitucionOtorgante,
+                MotivoOCategoria = target.MotivoOCategoria,
+                TipoParticipacion = target.TipoParticipacion,
+                EstadoActual = target.EstadoActual,
+                ArchivoEvidencia = target.ArchivoEvidencia
+            };
+
+            target.TipoRegistro = copiaNuevo.TipoRegistro;
+            target.Nivel = copiaNuevo.Nivel;
+            target.AnoInicio = copiaNuevo.AnoInicio;
+            target.AnoFin = copiaNuevo.AnoFin;
+            target.NombreReconocimiento = copiaNuevo.NombreReconocimiento;
+            target.InstitucionOtorgante = copiaNuevo.InstitucionOtorgante;
+            target.MotivoOCategoria = copiaNuevo.MotivoOCategoria;
+            target.TipoParticipacion = copiaNuevo.TipoParticipacion;
+            target.EstadoActual = copiaNuevo.EstadoActual;
+            target.ArchivoEvidencia = copiaNuevo.ArchivoEvidencia;
+        }
+        else
+        {
+            copiaNuevo.EgresadoId = EgresadoModel.IdEgresado;
+            EgresadoModel.ReconocimientosAcademicos.Add(copiaNuevo);
+        }
+
+        // Cierre instantáneo
+        Cancelar();
+        StateHasChanged();
+
         try
         {
-            nuevoRegistro.EgresadoId = EgresadoModel.IdEgresado;
-            EgresadoModel.ReconocimientosAcademicos.Add(nuevoRegistro);
-
             await EgresadoService.ActualizarAsync(EgresadoModel);
-
-            nuevoRegistro = new ReconocimientoAcademico();
-            mostrandoFormulario = false;
-            await OnNotificar.InvokeAsync("Registro guardado exitosamente.");
+            await OnNotificar.InvokeAsync(esEdicion
+                ? "Registro actualizado exitosamente."
+                : "Registro guardado exitosamente.");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error al guardar distinción: {ex.Message}");
-            EgresadoModel.ReconocimientosAcademicos.Remove(nuevoRegistro);
+            if (esEdicion && target != null && respaldo != null)
+            {
+                target.TipoRegistro = respaldo.TipoRegistro;
+                target.Nivel = respaldo.Nivel;
+                target.AnoInicio = respaldo.AnoInicio;
+                target.AnoFin = respaldo.AnoFin;
+                target.NombreReconocimiento = respaldo.NombreReconocimiento;
+                target.InstitucionOtorgante = respaldo.InstitucionOtorgante;
+                target.MotivoOCategoria = respaldo.MotivoOCategoria;
+                target.TipoParticipacion = respaldo.TipoParticipacion;
+                target.EstadoActual = respaldo.EstadoActual;
+                target.ArchivoEvidencia = respaldo.ArchivoEvidencia;
+            }
+            else
+            {
+                EgresadoModel.ReconocimientosAcademicos.Remove(copiaNuevo);
+            }
             await OnNotificar.InvokeAsync("Error de conexión al guardar.");
+        }
+        finally
+        {
+            guardando = false;
         }
     }
 
     private void Cancelar()
     {
+        errores.Clear();
+        registroEnEdicion = null;
         nuevoRegistro = new ReconocimientoAcademico();
+        fechaInicioTemp = null;
+        fechaFinTemp = null;
         mostrandoFormulario = false;
     }
 

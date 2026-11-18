@@ -11,7 +11,7 @@
         <div class="flex items-center space-x-4">
             @if (expandido && !mostrandoFormulario)
             {
-                <button type="button" @onclick:stopPropagation="true" @onclick="() => mostrandoFormulario = true" class="text-sm font-medium text-[#003366] hover:underline">
+                <button type="button" @onclick:stopPropagation="true" @onclick="AbrirNuevoFormulario" class="text-sm font-medium text-[#003366] hover:underline">
                     + Registrar producto
                 </button>
             }
@@ -24,25 +24,28 @@
     @if (expandido)
     {
         <div class="p-6 bg-slate-50 border-t border-gray-200">
-            <!--  Productos Guardados -->
+            <!-- Productos Guardados -->
             @if (EgresadoModel.ProductividadesCientificas.Any())
             {
                 <div class="space-y-4">
                     @foreach (var prod in EgresadoModel.ProductividadesCientificas)
                     {
-                        <!-- TARJETA  -->
+                        <!-- TARJETA -->
                         <div class="border border-gray-200 rounded-lg p-5 bg-white relative shadow-sm">
                             <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
-                                <button type="button" class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button type="button" @onclick="() => IniciarEdicion(prod)" class="hover:text-slate-600 transition-colors">Editar</button>
                                 <button type="button" @onclick="() => ConfirmarEliminar(prod)" class="hover:text-red-500 transition-colors">Eliminar</button>
                             </div>
 
                             <h3 class="font-bold text-slate-900 text-lg mb-1 pr-32">@prod.Titulo</h3>
                             <p class="text-xs text-[#003366] font-bold mb-1.5 uppercase tracking-wide">@prod.TipoProducto</p>
-                            
+
                             <p class="text-sm text-slate-600 mb-4">
-                                @(string.IsNullOrEmpty(prod.RevistaOLibro) ? prod.Editorial : prod.RevistaOLibro) 
-                                @if(prod.AnoPublicacion.HasValue) { <span>• @prod.AnoPublicacion</span> }
+                                @(string.IsNullOrEmpty(prod.RevistaOLibro) ? prod.Editorial : prod.RevistaOLibro)
+                                @if (prod.AnoPublicacion.HasValue)
+                                {
+                                    <span>• @prod.AnoPublicacion</span>
+                                }
                             </p>
 
                             @if (prod.Coautores.Any() || (prod.ParticipoProfesorMied && !string.IsNullOrWhiteSpace(prod.NombreProfesorMied)))
@@ -52,13 +55,13 @@
                                     {
                                         <p class="text-[11px] font-bold text-slate-400 mb-2 uppercase">Coautores reconocidos</p>
                                         <ul class="text-sm text-slate-700 list-disc list-inside mb-3">
-                                            @foreach(var coautor in prod.Coautores)
+                                            @foreach (var coautor in prod.Coautores)
                                             {
                                                 <li>@coautor.Nombres @coautor.ApellidoPaterno (@coautor.Rol)</li>
                                             }
                                         </ul>
                                     }
-                                    
+
                                     @if (prod.ParticipoProfesorMied && !string.IsNullOrWhiteSpace(prod.NombreProfesorMied))
                                     {
                                         <div>
@@ -68,7 +71,7 @@
                                     }
                                 </div>
                             }
-                        </div> 
+                        </div>
                     }
                 </div>
             }
@@ -80,17 +83,23 @@
             @if (mostrandoFormulario)
             {
                 <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-6 shadow-sm mt-4">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar nueva publicación</h3>
-                    
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">
+                        @(registroEnEdicion != null ? "Editar publicación" : "Registrar nueva publicación")
+                    </h3>
+
                     <div class="mb-4">
-                        <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de producto</label>
-                        <select @bind="nuevoRegistro.TipoProducto" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
+                        <label class="block text-xs font-bold text-gray-700 mb-1">Tipo de producto *</label>
+                        <select @bind="nuevoRegistro.TipoProducto" class="w-full border @(TieneError("TipoProducto") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] bg-white">
                             <option value="">Seleccione el tipo de publicación...</option>
                             <option value="Artículo en revista indexada">Artículo publicado en revista indexada</option>
                             <option value="Artículo en revista arbitrada">Artículo publicado en revista arbitrada</option>
                             <option value="Capítulo de libro">Capítulo de libro publicado</option>
                             <option value="Libro">Libro publicado</option>
                         </select>
+                        @if (TieneError("TipoProducto"))
+                        {
+                            <p class="text-red-500 text-xs mt-1">@errores["TipoProducto"]</p>
+                        }
                     </div>
 
                     @if (!string.IsNullOrEmpty(nuevoRegistro.TipoProducto))
@@ -98,32 +107,48 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div class="md:col-span-2">
                                 <label class="block text-xs text-gray-500 mb-1">
-                                    @(nuevoRegistro.TipoProducto == "Libro" ? "Título del libro" : (nuevoRegistro.TipoProducto == "Capítulo de libro" ? "Título del capítulo" : "Título del artículo"))
+                                    @(nuevoRegistro.TipoProducto == "Libro" ? "Título del libro *" : (nuevoRegistro.TipoProducto == "Capítulo de libro" ? "Título del capítulo *" : "Título del artículo *"))
                                 </label>
-                                <input type="text" @bind="nuevoRegistro.Titulo" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                <input type="text" @bind="nuevoRegistro.Titulo" class="w-full border @(TieneError("Titulo") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                @if (TieneError("Titulo"))
+                                {
+                                    <p class="text-red-500 text-xs mt-1">@errores["Titulo"]</p>
+                                }
                             </div>
 
                             @if (nuevoRegistro.TipoProducto.Contains("Artículo"))
                             {
                                 <div class="md:col-span-2">
-                                    <label class="block text-xs text-gray-500 mb-1">Nombre de la revista</label>
-                                    <input type="text" @bind="nuevoRegistro.RevistaOLibro" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    <label class="block text-xs text-gray-500 mb-1">Nombre de la revista *</label>
+                                    <input type="text" @bind="nuevoRegistro.RevistaOLibro" class="w-full border @(TieneError("RevistaOLibro") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    @if (TieneError("RevistaOLibro"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["RevistaOLibro"]</p>
+                                    }
                                 </div>
                             }
-                            
+
                             @if (nuevoRegistro.TipoProducto == "Capítulo de libro")
                             {
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Título del libro</label>
-                                    <input type="text" @bind="nuevoRegistro.RevistaOLibro" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    <label class="block text-xs text-gray-500 mb-1">Título del libro *</label>
+                                    <input type="text" @bind="nuevoRegistro.RevistaOLibro" class="w-full border @(TieneError("RevistaOLibro") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    @if (TieneError("RevistaOLibro"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["RevistaOLibro"]</p>
+                                    }
                                 </div>
                             }
 
                             @if (nuevoRegistro.TipoProducto == "Capítulo de libro" || nuevoRegistro.TipoProducto == "Libro")
                             {
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Editorial</label>
-                                    <input type="text" @bind="nuevoRegistro.Editorial" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    <label class="block text-xs text-gray-500 mb-1">Editorial *</label>
+                                    <input type="text" @bind="nuevoRegistro.Editorial" class="w-full border @(TieneError("Editorial") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                    @if (TieneError("Editorial"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["Editorial"]</p>
+                                    }
                                 </div>
                                 <div>
                                     <label class="block text-xs text-gray-500 mb-1">ISBN (Opcional para capítulos)</label>
@@ -134,22 +159,30 @@
                             @if (nuevoRegistro.TipoProducto == "Libro")
                             {
                                 <div>
-                                    <label class="block text-xs text-gray-500 mb-1">Participación</label>
-                                    <select @bind="nuevoRegistro.Participacion" class="w-full border border-gray-300 rounded-md p-2 text-sm bg-white focus:ring-[#003366]">
+                                    <label class="block text-xs text-gray-500 mb-1">Participación *</label>
+                                    <select @bind="nuevoRegistro.Participacion" class="w-full border @(TieneError("Participacion") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm bg-white focus:ring-[#003366]">
                                         <option value="">Seleccione...</option>
                                         <option value="Autor">Autor</option>
                                         <option value="Coautor">Coautor</option>
                                         <option value="Coordinador">Coordinador</option>
                                         <option value="Editor">Editor</option>
                                     </select>
+                                    @if (TieneError("Participacion"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["Participacion"]</p>
+                                    }
                                 </div>
                             }
 
                             <div>
-                                <label class="block text-xs text-gray-500 mb-1">Año de publicación</label>
-                                <input type="number" @bind="nuevoRegistro.AnoPublicacion" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                <label class="block text-xs text-gray-500 mb-1">Año de publicación *</label>
+                                <input type="number" @bind="nuevoRegistro.AnoPublicacion" class="w-full border @(TieneError("AnoPublicacion") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" />
+                                @if (TieneError("AnoPublicacion"))
+                                {
+                                    <p class="text-red-500 text-xs mt-1">@errores["AnoPublicacion"]</p>
+                                }
                             </div>
-                            
+
                             <div>
                                 <label class="block text-xs text-gray-500 mb-1">DOI o URL</label>
                                 <input type="text" @bind="nuevoRegistro.DoiUrl" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
@@ -159,7 +192,7 @@
                         <!-- Sección Coautores -->
                         <div class="bg-gray-50 p-4 rounded border border-gray-200 mb-4">
                             <h4 class="text-sm font-bold text-gray-800 mb-3">Participación de coautores y profesores MIED</h4>
-                            
+
                             <label class="flex items-center space-x-2 cursor-pointer mb-3">
                                 <input type="checkbox" @bind="nuevoRegistro.ParticipoProfesorMied" class="rounded text-[#003366] focus:ring-[#003366]" />
                                 <span class="text-sm text-gray-700 font-medium">Un profesor de la MIED participó como coautor</span>
@@ -168,8 +201,12 @@
                             @if (nuevoRegistro.ParticipoProfesorMied)
                             {
                                 <div class="mb-4">
-                                    <label class="block text-xs text-gray-500 mb-1">Nombre completo del profesor(a)</label>
-                                    <input type="text" @bind="nuevoRegistro.NombreProfesorMied" class="w-full md:w-1/2 border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" placeholder="Ej. Dr. Juan Pérez" />
+                                    <label class="block text-xs text-gray-500 mb-1">Nombre completo del profesor(a) *</label>
+                                    <input type="text" @bind="nuevoRegistro.NombreProfesorMied" class="w-full md:w-1/2 border @(TieneError("NombreProfesorMied") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366]" placeholder="Ej. Dr. Juan Pérez" />
+                                    @if (TieneError("NombreProfesorMied"))
+                                    {
+                                        <p class="text-red-500 text-xs mt-1">@errores["NombreProfesorMied"]</p>
+                                    }
                                 </div>
                             }
 
@@ -203,7 +240,7 @@
                                 @if (nuevoRegistro.Coautores.Any())
                                 {
                                     <ul class="mt-2 space-y-1">
-                                        @foreach(var c in nuevoRegistro.Coautores.ToList())
+                                        @foreach (var c in nuevoRegistro.Coautores.ToList())
                                         {
                                             <li class="flex justify-between items-center bg-white border border-gray-200 px-3 py-1.5 rounded text-xs">
                                                 <span><span class="font-bold">@c.Nombres @c.ApellidoPaterno</span> - @c.Rol</span>
@@ -217,7 +254,10 @@
 
                         <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
                             <button type="button" @onclick="Cancelar" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
-                            <button type="button" @onclick="Guardar" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar publicación</button>
+                            <button type="button" @onclick="Guardar" disabled="@guardando"
+                                    class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244] disabled:opacity-50">
+                                @(registroEnEdicion != null ? "Actualizar publicación" : "Guardar publicación")
+                            </button>
                         </div>
                     }
                 </div>
@@ -226,20 +266,92 @@
     }
 </div>
 
-
 @code {
     [Parameter]
     public Egresado EgresadoModel { get; set; } = null!;
     [Parameter]
     public EventCallback<string> OnNotificar { get; set; }
+    private bool guardando = false;
     private bool mostrandoFormulario = false;
     private bool expandido = true;
-    private ProductividadCientifica nuevoRegistro = new ProductividadCientifica();
-    private CoautorProducto tempCoautor = new CoautorProducto();
+    private ProductividadCientifica nuevoRegistro = new();
+    private ProductividadCientifica? registroEnEdicion = null;
+    private CoautorProducto tempCoautor = new();
+    private Dictionary<string, string> errores = new();
 
-    private void ToggleExpandido()
+    private void ToggleExpandido() => expandido = !expandido;
+
+    private bool TieneError(string campo) => errores.ContainsKey(campo);
+
+    private void AbrirNuevoFormulario()
     {
-        expandido = !expandido;
+        errores.Clear();
+        registroEnEdicion = null;
+        nuevoRegistro = new ProductividadCientifica();
+        tempCoautor = new CoautorProducto();
+        mostrandoFormulario = true;
+    }
+
+    private void IniciarEdicion(ProductividadCientifica prod)
+    {
+        errores.Clear();
+        registroEnEdicion = prod;
+        nuevoRegistro = new ProductividadCientifica
+        {
+            IdProductividad = prod.IdProductividad,
+            EgresadoId = prod.EgresadoId,
+            TipoProducto = prod.TipoProducto,
+            Titulo = prod.Titulo,
+            RevistaOLibro = prod.RevistaOLibro,
+            Editorial = prod.Editorial,
+            AnoPublicacion = prod.AnoPublicacion,
+            DoiUrl = prod.DoiUrl,
+            Isbn = prod.Isbn,
+            Participacion = prod.Participacion,
+            ArchivoPdf = prod.ArchivoPdf,
+            ParticipoProfesorMied = prod.ParticipoProfesorMied,
+            NombreProfesorMied = prod.NombreProfesorMied,
+            Coautores = prod.Coautores.Select(c => new CoautorProducto
+            {
+                Nombres = c.Nombres,
+                ApellidoPaterno = c.ApellidoPaterno,
+                Rol = c.Rol
+            }).ToList()
+        };
+        tempCoautor = new CoautorProducto();
+        mostrandoFormulario = true;
+    }
+
+    private bool ValidarFormulario()
+    {
+        errores.Clear();
+
+        if (string.IsNullOrWhiteSpace(nuevoRegistro.TipoProducto))
+            errores["TipoProducto"] = "El tipo de producto es obligatorio.";
+
+        if (string.IsNullOrWhiteSpace(nuevoRegistro.Titulo))
+            errores["Titulo"] = "El título es obligatorio.";
+
+        if (nuevoRegistro.TipoProducto.Contains("Artículo") && string.IsNullOrWhiteSpace(nuevoRegistro.RevistaOLibro))
+            errores["RevistaOLibro"] = "El nombre de la revista es obligatorio.";
+
+        if (nuevoRegistro.TipoProducto == "Capítulo de libro" && string.IsNullOrWhiteSpace(nuevoRegistro.RevistaOLibro))
+            errores["RevistaOLibro"] = "El título del libro es obligatorio.";
+
+        if ((nuevoRegistro.TipoProducto == "Capítulo de libro" || nuevoRegistro.TipoProducto == "Libro")
+            && string.IsNullOrWhiteSpace(nuevoRegistro.Editorial))
+            errores["Editorial"] = "La editorial es obligatoria.";
+
+        if (nuevoRegistro.TipoProducto == "Libro" && string.IsNullOrWhiteSpace(nuevoRegistro.Participacion))
+            errores["Participacion"] = "El tipo de participación es obligatorio.";
+
+        if (!nuevoRegistro.AnoPublicacion.HasValue || nuevoRegistro.AnoPublicacion < 1950 || nuevoRegistro.AnoPublicacion > 2100)
+            errores["AnoPublicacion"] = "Ingresa un año de publicación válido (1950 - 2100).";
+
+        if (nuevoRegistro.ParticipoProfesorMied && string.IsNullOrWhiteSpace(nuevoRegistro.NombreProfesorMied))
+            errores["NombreProfesorMied"] = "El nombre del profesor MIED es obligatorio.";
+
+        return !errores.Any();
     }
 
     private void AgregarCoautor()
@@ -255,36 +367,113 @@
             tempCoautor = new CoautorProducto();
         }
     }
+
     private async Task Guardar()
     {
-        if (string.IsNullOrWhiteSpace(nuevoRegistro.Titulo))
+        if (guardando) return;
+
+        if (!ValidarFormulario())
         {
-            await OnNotificar.InvokeAsync("El titulo es obligatorio.");
+            await OnNotificar.InvokeAsync("Completa todos los campos obligatorios marcados en rojo.");
             return;
         }
-        nuevoRegistro.EgresadoId = EgresadoModel.IdEgresado;
-        EgresadoModel.ProductividadesCientificas.Add(nuevoRegistro);
-        await EgresadoService.ActualizarAsync(EgresadoModel);
-        nuevoRegistro = new ProductividadCientifica();
-        mostrandoFormulario = false;
-        await OnNotificar.InvokeAsync("Producto registrado exitosamente.");
+
+        guardando = true;
+
+        var esEdicion = registroEnEdicion != null;
+        var target = registroEnEdicion;
+        var copiaNuevo = nuevoRegistro;
+
+        // Respaldo por si falla la BD
+        ProductividadCientifica? respaldo = null;
+        if (esEdicion && target != null)
+        {
+            respaldo = new ProductividadCientifica
+            {
+                TipoProducto = target.TipoProducto,
+                Titulo = target.Titulo,
+                RevistaOLibro = target.RevistaOLibro,
+                Editorial = target.Editorial,
+                AnoPublicacion = target.AnoPublicacion,
+                DoiUrl = target.DoiUrl,
+                Isbn = target.Isbn,
+                Participacion = target.Participacion,
+                ParticipoProfesorMied = target.ParticipoProfesorMied,
+                NombreProfesorMied = target.NombreProfesorMied,
+                Coautores = target.Coautores.ToList()
+            };
+
+            target.TipoProducto = copiaNuevo.TipoProducto;
+            target.Titulo = copiaNuevo.Titulo;
+            target.RevistaOLibro = copiaNuevo.RevistaOLibro;
+            target.Editorial = copiaNuevo.Editorial;
+            target.AnoPublicacion = copiaNuevo.AnoPublicacion;
+            target.DoiUrl = copiaNuevo.DoiUrl;
+            target.Isbn = copiaNuevo.Isbn;
+            target.Participacion = copiaNuevo.Participacion;
+            target.ParticipoProfesorMied = copiaNuevo.ParticipoProfesorMied;
+            target.NombreProfesorMied = copiaNuevo.ParticipoProfesorMied ? copiaNuevo.NombreProfesorMied : null;
+            target.Coautores = copiaNuevo.Coautores;
+        }
+        else
+        {
+            copiaNuevo.EgresadoId = EgresadoModel.IdEgresado;
+            EgresadoModel.ProductividadesCientificas.Add(copiaNuevo);
+        }
+
+        Cancelar();
+        StateHasChanged();
+
+        try
+        {
+            await EgresadoService.ActualizarAsync(EgresadoModel);
+            await OnNotificar.InvokeAsync(esEdicion
+                ? "Producto actualizado exitosamente."
+                : "Producto registrado exitosamente.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al guardar producto: {ex.Message}");
+            if (esEdicion && target != null && respaldo != null)
+            {
+                target.TipoProducto = respaldo.TipoProducto;
+                target.Titulo = respaldo.Titulo;
+                target.RevistaOLibro = respaldo.RevistaOLibro;
+                target.Editorial = respaldo.Editorial;
+                target.AnoPublicacion = respaldo.AnoPublicacion;
+                target.DoiUrl = respaldo.DoiUrl;
+                target.Isbn = respaldo.Isbn;
+                target.Participacion = respaldo.Participacion;
+                target.ParticipoProfesorMied = respaldo.ParticipoProfesorMied;
+                target.NombreProfesorMied = respaldo.NombreProfesorMied;
+                target.Coautores = respaldo.Coautores;
+            }
+            else
+            {
+                EgresadoModel.ProductividadesCientificas.Remove(copiaNuevo);
+            }
+            await OnNotificar.InvokeAsync("Error de conexión al guardar el producto.");
+        }
+        finally
+        {
+            guardando = false;
+        }
     }
 
     private void Cancelar()
     {
+        errores.Clear();
+        registroEnEdicion = null;
         nuevoRegistro = new ProductividadCientifica();
         tempCoautor = new CoautorProducto();
         mostrandoFormulario = false;
+
     }
 
-    private async Task ConfirmarEliminar (ProductividadCientifica prod)
+    private async Task ConfirmarEliminar(ProductividadCientifica prod)
     {
-        if (prod.IdProductividad > 0)
-        {
-            EgresadoModel.ProductividadesCientificas.Remove(prod);
-            await OnNotificar.InvokeAsync("Producto eliminado.");
-        }
+        EgresadoModel.ProductividadesCientificas.Remove(prod);
+        await EgresadoService.ActualizarAsync(EgresadoModel);
+        await OnNotificar.InvokeAsync("Producto eliminado.");
     }
-
-
 }

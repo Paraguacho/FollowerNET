@@ -1,4 +1,5 @@
-﻿@using Follower.Models
+﻿@using System.Globalization
+@using Follower.Models
 @using Follower.Services
 @inject IEgresadoService EgresadoService
 
@@ -11,7 +12,7 @@
         <div class="flex items-center space-x-4">
             @if (expandido && !mostrandoFormulario)
             {
-                <button type="button" @onclick:stopPropagation="true" @onclick="() => mostrandoFormulario = true" class="text-sm font-medium text-[#003366] hover:underline">
+                <button type="button" @onclick:stopPropagation="true" @onclick="AbrirNuevoFormulario" class="text-sm font-medium text-[#003366] hover:underline">
                     + Registrar proyecto
                 </button>
             }
@@ -21,7 +22,7 @@
         </div>
     </div>
 
-    <!--  ACORDEÓN -->
+    <!-- ACORDEÓN -->
     @if (expandido)
     {
         <div class="p-6 bg-slate-50 border-t border-gray-200">
@@ -34,7 +35,7 @@
                         <div class="border border-gray-200 rounded-lg p-5 bg-white relative shadow-sm">
 
                             <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
-                                <button type="button" class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button type="button" @onclick="() => IniciarEdicion(proyecto)" class="hover:text-slate-600 transition-colors">Editar</button>
                                 <button type="button" @onclick="() => ConfirmarEliminar(proyecto)" class="hover:text-red-500 transition-colors">Eliminar</button>
                             </div>
 
@@ -74,48 +75,89 @@
             @if (mostrandoFormulario)
             {
                 <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-6 shadow-sm mt-4">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar participación en proyecto</h3>
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">
+                        @(proyectoEnEdicion != null ? "Editar proyecto de investigación" : "Registrar participación en proyecto")
+                    </h3>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div class="md:col-span-2">
-                            <label class="block text-xs text-gray-500 mb-1">Nombre del proyecto</label>
-                            <input type="text" @bind="nuevoProyecto.Nombre" placeholder="Ej. Evaluación de metodologías ágiles..." class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                            <label class="block text-xs text-gray-500 mb-1">Nombre del proyecto *</label>
+                            <input type="text" @bind="nuevoProyecto.Nombre" placeholder="Ej. Evaluación de metodologías ágiles..."
+                                   class="w-full border @(TieneError("Nombre") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                            @if (TieneError("Nombre"))
+                            {
+                                <p class="text-red-500 text-xs mt-1">@errores["Nombre"]</p>
+                            }
                         </div>
 
                         <div class="md:col-span-2">
-                            <label class="block text-xs text-gray-500 mb-1">Institución responsable</label>
-                            <input type="text" @bind="nuevoProyecto.Institucion" placeholder="Ej. Instituto Tecnológico de Sonora" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                            <label class="block text-xs text-gray-500 mb-1">Institución responsable *</label>
+                            <input type="text" @bind="nuevoProyecto.Institucion" placeholder="Ej. Instituto Tecnológico de Sonora"
+                                   class="w-full border @(TieneError("Institucion") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                            @if (TieneError("Institucion"))
+                            {
+                                <p class="text-red-500 text-xs mt-1">@errores["Institucion"]</p>
+                            }
                         </div>
 
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">Función</label>
-                            <select @bind="nuevoProyecto.Funcion" class="w-full border border-gray-300 rounded-md p-2 text-sm bg-white focus:ring-[#003366] focus:border-[#003366]">
+                            <label class="block text-xs text-gray-500 mb-1">Función *</label>
+                            <select @bind="nuevoProyecto.Funcion"
+                                    class="w-full border @(TieneError("Funcion") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm bg-white focus:ring-[#003366] focus:border-[#003366]">
                                 <option value="">Seleccione su función...</option>
                                 <option value="Responsable">Responsable</option>
                                 <option value="Colaborador">Colaborador</option>
                                 <option value="Asistente">Asistente</option>
                                 <option value="Otra">Otra</option>
                             </select>
+                            @if (TieneError("Funcion"))
+                            {
+                                <p class="text-red-500 text-xs mt-1">@errores["Funcion"]</p>
+                            }
                         </div>
 
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">Estado del proyecto</label>
-                            <select @bind="nuevoProyecto.Estado" class="w-full border border-gray-300 rounded-md p-2 text-sm bg-white focus:ring-[#003366] focus:border-[#003366]">
+                            <label class="block text-xs text-gray-500 mb-1">Estado del proyecto *</label>
+                            <select @bind="nuevoProyecto.Estado"
+                                    class="w-full border @(TieneError("Estado") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm bg-white focus:ring-[#003366] focus:border-[#003366]">
                                 <option value="">Seleccione el estado...</option>
                                 <option value="En curso">En curso</option>
                                 <option value="Concluido">Concluido</option>
                             </select>
+                            @if (TieneError("Estado"))
+                            {
+                                <p class="text-red-500 text-xs mt-1">@errores["Estado"]</p>
+                            }
                         </div>
 
-                        <div class="md:col-span-2">
-                            <label class="block text-xs text-gray-500 mb-1">Periodo (Año de inicio y término o actual)</label>
-                            <input type="text" @bind="nuevoProyecto.Periodo" placeholder="Ej. Agosto 2025 - Presente" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Fecha de inicio *</label>
+                            <input type="date" @bind="fechaInicio"
+                                   class="w-full border @(TieneError("FechaInicio") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
+                            @if (TieneError("FechaInicio"))
+                            {
+                                <p class="text-red-500 text-xs mt-1">@errores["FechaInicio"]</p>
+                            }
+                        </div>
+
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">
+                                Fecha de término @(nuevoProyecto.Estado == "Concluido" ? "*" : "(Opcional si está en curso)")
+                            </label>
+                            <input type="date" @bind="fechaFin" disabled="@(nuevoProyecto.Estado == "En curso")"
+                                   class="w-full border @(TieneError("FechaFin") ? "border-red-500" : "border-gray-300") rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] disabled:bg-gray-100 disabled:text-gray-400" />
+                            @if (TieneError("FechaFin"))
+                            {
+                                <p class="text-red-500 text-xs mt-1">@errores["FechaFin"]</p>
+                            }
                         </div>
                     </div>
 
                     <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
                         <button type="button" @onclick="Cancelar" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
-                        <button type="button" @onclick="Guardar" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar proyecto</button>
+                        <button type="button" @onclick="Guardar" disabled="@guardando" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244] disabled:opacity-50">
+                            @(proyectoEnEdicion != null ? "Actualizar proyecto" : "Guardar proyecto")
+                        </button>
                     </div>
                 </div>
             }
@@ -130,44 +172,178 @@
     [Parameter]
     public EventCallback<string> OnNotificar { get; set; }
 
-    private bool expandido = false; 
+    private bool expandido = false;
     private bool mostrandoFormulario = false;
-    private ProyectoInvestigacion nuevoProyecto = new ProyectoInvestigacion();
+    private bool guardando = false;
 
-    private void ToggleExpandido()
+    private ProyectoInvestigacion nuevoProyecto = new();
+    private ProyectoInvestigacion? proyectoEnEdicion = null;
+    private DateTime? fechaInicio;
+    private DateTime? fechaFin;
+    private Dictionary<string, string> errores = new();
+
+    private void ToggleExpandido() => expandido = !expandido;
+
+    private bool TieneError(string campo) => errores.ContainsKey(campo);
+
+    private void AbrirNuevoFormulario()
     {
-        expandido = !expandido;
+        errores.Clear();
+        proyectoEnEdicion = null;
+        nuevoProyecto = new ProyectoInvestigacion();
+        fechaInicio = null;
+        fechaFin = null;
+        mostrandoFormulario = true;
+    }
+
+    private void IniciarEdicion(ProyectoInvestigacion proyecto)
+    {
+        errores.Clear();
+        proyectoEnEdicion = proyecto;
+        nuevoProyecto = new ProyectoInvestigacion
+        {
+            IdProyecto = proyecto.IdProyecto,
+            EgresadoId = proyecto.EgresadoId,
+            Nombre = proyecto.Nombre,
+            Institucion = proyecto.Institucion,
+            Funcion = proyecto.Funcion,
+            Estado = proyecto.Estado,
+            Periodo = proyecto.Periodo
+        };
+
+        // Intentar recuperar las fechas desde el string Periodo (formato "dd/MM/yyyy - dd/MM/yyyy" o "dd/MM/yyyy - Presente")
+        fechaInicio = null;
+        fechaFin = null;
+        if (!string.IsNullOrWhiteSpace(proyecto.Periodo))
+        {
+            var partes = proyecto.Periodo.Split(" - ", StringSplitOptions.TrimEntries);
+            if (partes.Length >= 1 && DateTime.TryParseExact(partes[0], "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var fi))
+            {
+                fechaInicio = fi;
+            }
+            if (partes.Length >= 2 && partes[1] != "Presente" && DateTime.TryParseExact(partes[1], "dd/MM/yyyy", CultureInfo.InvariantCulture, DateTimeStyles.None, out var ff))
+            {
+                fechaFin = ff;
+            }
+        }
+
+        mostrandoFormulario = true;
+    }
+
+    private bool ValidarFormulario()
+    {
+        errores.Clear();
+
+        if (string.IsNullOrWhiteSpace(nuevoProyecto.Nombre))
+            errores["Nombre"] = "El nombre del proyecto es obligatorio.";
+
+        if (string.IsNullOrWhiteSpace(nuevoProyecto.Institucion))
+            errores["Institucion"] = "La institución responsable es obligatoria.";
+
+        if (string.IsNullOrWhiteSpace(nuevoProyecto.Funcion))
+            errores["Funcion"] = "La función en el proyecto es obligatoria.";
+
+        if (string.IsNullOrWhiteSpace(nuevoProyecto.Estado))
+            errores["Estado"] = "El estado del proyecto es obligatorio.";
+
+        if (!fechaInicio.HasValue)
+            errores["FechaInicio"] = "La fecha de inicio es obligatoria.";
+
+        if (nuevoProyecto.Estado == "Concluido")
+        {
+            if (!fechaFin.HasValue)
+                errores["FechaFin"] = "La fecha de término es obligatoria para proyectos concluidos.";
+            else if (fechaInicio.HasValue && fechaFin.Value < fechaInicio.Value)
+                errores["FechaFin"] = "La fecha de término no puede ser anterior a la de inicio.";
+        }
+
+        return !errores.Any();
     }
 
     private async Task Guardar()
     {
-        if (string.IsNullOrWhiteSpace(nuevoProyecto.Nombre))
+        if (guardando) return;
+
+        if (!ValidarFormulario())
         {
-            await OnNotificar.InvokeAsync("El nombre del proyecto es obligatorio.");
+            await OnNotificar.InvokeAsync("Completa todos los campos obligatorios marcados en rojo.");
             return;
         }
 
+        guardando = true;
+
+        // Convertir las dos fechas al campo Periodo
+        string periodoFormateado = nuevoProyecto.Estado == "En curso" || !fechaFin.HasValue
+            ? $"{fechaInicio!.Value:dd/MM/yyyy} - Presente"
+            : $"{fechaInicio!.Value:dd/MM/yyyy} - {fechaFin.Value:dd/MM/yyyy}";
+
+        var esEdicion = proyectoEnEdicion != null;
+        var target = proyectoEnEdicion;
+        var copiaNuevo = nuevoProyecto;
+        copiaNuevo.Periodo = periodoFormateado;
+
+        // Respaldo por si falla la BD
+        string? oldNombre = target?.Nombre;
+        string? oldInstitucion = target?.Institucion;
+        string? oldFuncion = target?.Funcion;
+        string? oldEstado = target?.Estado;
+        string? oldPeriodo = target?.Periodo;
+
+        if (esEdicion && target != null)
+        {
+            target.Nombre = copiaNuevo.Nombre;
+            target.Institucion = copiaNuevo.Institucion;
+            target.Funcion = copiaNuevo.Funcion;
+            target.Estado = copiaNuevo.Estado;
+            target.Periodo = periodoFormateado;
+        }
+        else
+        {
+            copiaNuevo.EgresadoId = EgresadoModel.IdEgresado;
+            EgresadoModel.ProyectosInvestigacion.Add(copiaNuevo);
+        }
+
+        // Cerrar el formulario de inmediato para que la UI responda al instante
+        Cancelar();
+        StateHasChanged();
+
         try
         {
-            nuevoProyecto.EgresadoId = EgresadoModel.IdEgresado;
-            EgresadoModel.ProyectosInvestigacion.Add(nuevoProyecto);
             await EgresadoService.ActualizarAsync(EgresadoModel);
-
-            nuevoProyecto = new ProyectoInvestigacion();
-            mostrandoFormulario = false;
-            await OnNotificar.InvokeAsync("Proyecto de investigación registrado exitosamente.");
+            await OnNotificar.InvokeAsync(esEdicion
+                ? "Proyecto de investigación actualizado exitosamente."
+                : "Proyecto de investigación registrado exitosamente.");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error al guardar proyecto: {ex.Message}");
-            EgresadoModel.ProyectosInvestigacion.Remove(nuevoProyecto);
+            if (esEdicion && target != null)
+            {
+                target.Nombre = oldNombre!;
+                target.Institucion = oldInstitucion!;
+                target.Funcion = oldFuncion!;
+                target.Estado = oldEstado!;
+                target.Periodo = oldPeriodo!;
+            }
+            else
+            {
+                EgresadoModel.ProyectosInvestigacion.Remove(copiaNuevo);
+            }
             await OnNotificar.InvokeAsync("Error de conexión al guardar el proyecto.");
+        }
+        finally
+        {
+            guardando = false;
         }
     }
 
     private void Cancelar()
     {
+        errores.Clear();
+        proyectoEnEdicion = null;
         nuevoProyecto = new ProyectoInvestigacion();
+        fechaInicio = null;
+        fechaFin = null;
         mostrandoFormulario = false;
     }
 
