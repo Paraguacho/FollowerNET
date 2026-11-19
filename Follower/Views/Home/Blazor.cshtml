@@ -3,13 +3,13 @@
 }
 <!DOCTYPE html>
 <html lang="es">
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-        <base href="~/" />  
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="@Url.Content("~/")" />
 
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
             tailwind.config = {
                 theme: {
                     extend: {
@@ -19,11 +19,10 @@
                     }
                 }
             }
-        </script>
-    </head>
-    <body class="bg-gray-50">
-        <component type="typeof(Follower.App)" render-mode="Server"/>
-        <script src="_framework/blazor.server.js"></script>
-
-    </body>
+    </script>
+</head>
+<body class="bg-gray-50">
+    <component type="typeof(Follower.App)" render-mode="Server" />
+    <script src="@Url.Content("~/_framework/blazor.server.js")"></script>
+</body>
 </html>

@@ -11,11 +11,11 @@
 
             <!-- Logotipo y Menú Principal -->
             <div class="flex items-center space-x-8">
-                <span class="text-[#003366] font-extrabold text-xl tracking-tight cursor-pointer" @onclick='() => NavManager.NavigateTo("/")'>EGRESADOS</span>
+                <span class="text-[#003366] font-extrabold text-xl tracking-tight cursor-pointer" @onclick='() => NavManager.NavigateTo("./")'>EGRESADOS</span>
                     <div class="hidden md:flex space-x-8">
-                        <a href="/responsable" class="@ObtenerClaseActiva("/responsable")">Gestión de egresados</a>
-                        <a href="/responsable/solicitudes" class="@ObtenerClaseActiva("/responsable/solicitudes")">Solicitudes de ingreso</a>
-                        <a href="/responsable/encuestas" class="@ObtenerClaseActiva("/responsable/encuestas")">Encuestas</a>
+                        <a href="responsable" class="@ObtenerClaseActiva("responsable")">Gestión de egresados</a>
+                        <a href="responsable/solicitudes" class="@ObtenerClaseActiva("responsable/solicitudes")">Solicitudes de ingreso</a>
+                        <a href="responsable/encuestas" class="@ObtenerClaseActiva("responsable/encuestas")">Encuestas</a>
                     </div>
             </div>
             
@@ -49,25 +49,28 @@
 
     private string ObtenerClaseActiva(string ruta)
     {
-        var rutaActual = new Uri(NavManager.Uri).AbsolutePath.TrimEnd('/');
+        var rutaActual = NavManager.ToBaseRelativePath(NavManager.Uri)
+            .Split('?', '#')[0]
+            .Trim('/');
+        var rutaObjetivo = ruta.Trim('/');
         bool esActiva;
 
-        if (ruta.Equals("/responsable", StringComparison.OrdinalIgnoreCase))
+        if (rutaObjetivo.Equals("responsable", StringComparison.OrdinalIgnoreCase))
         {
-            esActiva = rutaActual.Equals("/responsable", StringComparison.OrdinalIgnoreCase)
-                || (rutaActual.StartsWith("/responsable/", StringComparison.OrdinalIgnoreCase)
-                    && !rutaActual.StartsWith("/responsable/solicitudes", StringComparison.OrdinalIgnoreCase)
-                    && !rutaActual.StartsWith("/responsable/encuestas", StringComparison.OrdinalIgnoreCase));
+            esActiva = rutaActual.Equals("responsable", StringComparison.OrdinalIgnoreCase)
+                || (rutaActual.StartsWith("responsable/", StringComparison.OrdinalIgnoreCase)
+                    && !rutaActual.StartsWith("responsable/solicitudes", StringComparison.OrdinalIgnoreCase)
+                    && !rutaActual.StartsWith("responsable/encuestas", StringComparison.OrdinalIgnoreCase));
         }
         else
         {
-            esActiva = rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase)
-                || rutaActual.StartsWith(ruta + "/", StringComparison.OrdinalIgnoreCase);
+            esActiva = rutaActual.Equals(rutaObjetivo, StringComparison.OrdinalIgnoreCase)
+                || rutaActual.StartsWith(rutaObjetivo + "/", StringComparison.OrdinalIgnoreCase);
         }
 
         return esActiva
-            ? "text-[#003366] font-medium border-b-2 border-[#003366] pb-4 -mb-4" // Clases activas
-            : "text-gray-500 hover:text-gray-900 font-medium pb-4 -mb-4 transition-colors"; // Clases inactivas
+            ? "text-[#003366] font-medium border-b-2 border-[#003366] pb-4 -mb-4"
+            : "text-gray-500 hover:text-gray-900 font-medium pb-4 -mb-4 transition-colors";
     }
 
     protected override void OnInitialized()
@@ -90,6 +93,6 @@
         var customAuth = (Follower.Auth.CustomAuthStateProvider)authStateProvider;
         await customAuth.CerrarSesion();
 
-        NavManager.NavigateTo("/login", forceLoad: true);
+        NavManager.NavigateTo("login", forceLoad: true);
     }
 }

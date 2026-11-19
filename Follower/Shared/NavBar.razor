@@ -1,23 +1,23 @@
-﻿
-@using Microsoft.AspNetCore.Components.Authorization
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@implements IDisposable
 @inject NavigationManager NavManager
 @inject AuthenticationStateProvider AuthStateProvider
 
 <nav class="bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center sticky top-0 z-40">
-    <div class="text-[#003366] font-extrabold text-xl tracking-tight cursor-pointer" @onclick='() => NavManager.NavigateTo("/")'>
-        EGRESADOS 
+    <div class="text-[#003366] font-extrabold text-xl tracking-tight cursor-pointer" @onclick='() => NavManager.NavigateTo("./")'>
+        EGRESADOS
     </div>
 
     <AuthorizeView>
         <Authorized>
 
             <div class="hidden md:flex space-x-8">
-                <a href="/" class="@ObtenerClaseActiva("/")">Tablero de avisos</a>
+                <a href="./" class="@ObtenerClaseActiva("")">Tablero de avisos</a>
 
-                <a href="/perfil" class="@ObtenerClaseActiva("/perfil")">Gestión mi perfil</a>
+                <a href="perfil" class="@ObtenerClaseActiva("perfil")">Gestión mi perfil</a>
 
                 <div class="relative flex items-center pb-4 -mb-4">
-                    <a href="/encuestas" class="@ObtenerClaseActiva("/encuestas")">Encuestas</a>
+                    <a href="encuestas" class="@ObtenerClaseActiva("encuestas")">Encuestas</a>
                     <span class="absolute top-0 right-[-12px] flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] text-white font-bold">3</span>
                 </div>
             </div>
@@ -43,10 +43,10 @@
         </Authorized>
         <NotAuthorized>
             <div class="flex-column align-items-center space-x-4">
-                <button @onclick='() => NavManager.NavigateTo("/registro")' class="px-5 py-2 border border-[#003366] text-[#003366] font-medium rounded-md hover:bg-gray-50 transition-colors">
+                <button @onclick='() => NavManager.NavigateTo("registro")' class="px-5 py-2 border border-[#003366] text-[#003366] font-medium rounded-md hover:bg-gray-50 transition-colors">
                     Registrarse
                 </button>
-                <button @onclick='() => NavManager.NavigateTo("/login")' class="px-5 py-2 bg-[#003366] text-white font-medium rounded-md hover:bg-[#002244] transition-colors">
+                <button @onclick='() => NavManager.NavigateTo("login")' class="px-5 py-2 bg-[#003366] text-white font-medium rounded-md hover:bg-[#002244] transition-colors">
                     Iniciar sesión
                 </button>
             </div>
@@ -54,18 +54,21 @@
     </AuthorizeView>
 </nav>
 
-
-@code{
+@code {
     [Parameter]
-    public string MenuActivo { get; set; } = "/"; // /index / /perfil / encuestas
+    public string MenuActivo { get; set; } = "";
 
     private string ObtenerClaseActiva(string ruta)
     {
-        var rutaActual = new Uri(NavManager.Uri).AbsolutePath;
-        bool esActiva = rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase);
+        var rutaActual = NavManager.ToBaseRelativePath(NavManager.Uri)
+            .Split('?', '#')[0]
+            .Trim('/');
+        var rutaObjetivo = ruta.Trim('/');
+
+        bool esActiva = rutaActual.Equals(rutaObjetivo, StringComparison.OrdinalIgnoreCase);
         return esActiva
-            ? "text-[#003366] font-medium border-b-2 border-[#003366] pb-4 -mb-4" // Clases activas 
-            : "text-gray-500 hover:text-gray-900 font-medium pb-4 -mb-4 transition-colors"; // Clases inactivas
+            ? "text-[#003366] font-medium border-b-2 border-[#003366] pb-4 -mb-4"
+            : "text-gray-500 hover:text-gray-900 font-medium pb-4 -mb-4 transition-colors";
     }
 
     protected override void OnInitialized()
@@ -73,7 +76,7 @@
         NavManager.LocationChanged += LocationChanged;
     }
 
-    private void LocationChanged(object sender, LocationChangedEventArgs e)
+    private void LocationChanged(object? sender, LocationChangedEventArgs e)
     {
         StateHasChanged();
     }
@@ -83,16 +86,15 @@
         NavManager.LocationChanged -= LocationChanged;
     }
 
-    private string ObtenerIniciales (string nombreCompleto)
+    private string ObtenerIniciales(string nombreCompleto)
     {
         if (string.IsNullOrWhiteSpace(nombreCompleto)) return "EG";
 
-        var partes = nombreCompleto.Trim().Split(' ',StringSplitOptions.RemoveEmptyEntries);
-        if (partes.Length == 1) return partes[0].Substring(0, 1).ToUpper(); // Solo tiene un nombre
-        // Toma la primera letra de la primera palabra y la primera de la segunda
-         return $"{partes[0][0]}{partes[1][0]}".ToUpper();
-    }
+        var partes = nombreCompleto.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (partes.Length == 1) return partes[0].Substring(0, 1).ToUpper();
 
+        return $"{partes[0][0]}{partes[1][0]}".ToUpper();
+    }
 
     private async Task CerrarSesion()
     {
@@ -101,7 +103,6 @@
             await customAuth.CerrarSesion();
         }
 
-     
-        NavManager.NavigateTo("/", forceLoad: true);
+        NavManager.NavigateTo("./", forceLoad: true);
     }
 }

@@ -23,7 +23,7 @@
                 Tu registro está en estado <strong>Pendiente</strong>. El responsable del programa educativo revisará tu información. Recibirás un correo cuando tu cuenta sea autorizada.
             </p>
             <div class="mt-6">
-                <a href="/" class="text-sm font-medium text-[#003366] hover:underline">Volver al inicio</a>
+                <a href="./" class="text-sm font-medium text-[#003366] hover:underline">Volver al inicio</a>
             </div>
         </div>
     </main>
@@ -175,7 +175,7 @@ else
         var authState = await authStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity is { IsAuthenticated: true })
         {
-            Navigation.NavigateTo("/", forceLoad: false);
+            Navigation.NavigateTo("./", forceLoad: false);
         }
         programasDisponibles = await RegistroService.ObtenerProgramasDisponiblesAsync();
     }

@@ -69,7 +69,7 @@
                         <div class="mt-8 pt-6 border-t border-gray-100 text-center">
                             <p class="text-sm text-gray-600">
                                 ¿Aún no tienes una cuenta?
-                                <a href="/registro" class="font-medium text-[#003366] hover:underline">Solicita tu registro aquí</a>
+                                <a href="registro" class="font-medium text-[#003366] hover:underline">Solicita tu registro aquí</a>
                             </p>
                         </div>
                     </div>
@@ -100,7 +100,7 @@
         var authState = await authStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity is { IsAuthenticated: true })
         {
-            Navigation.NavigateTo("/", forceLoad: false);
+            Navigation.NavigateTo("./", forceLoad: false);
         }
     }
 
@@ -128,11 +128,11 @@
 
         if (resultado.Rol == "ResponsablePrograma")
         {
-            NavManager.NavigateTo("/responsable/solicitudes");
+            NavManager.NavigateTo("responsable/solicitudes");
         }
         else
         {
-            NavManager.NavigateTo("/");
+            NavManager.NavigateTo("./");
         }
            
            

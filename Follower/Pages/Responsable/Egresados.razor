@@ -1,4 +1,4 @@
-﻿@page "/responsable/"
+﻿@page "/responsable"
 @page "/responsable/egresados"
 @attribute [Authorize(Roles = "ResponsablePrograma")]
 @using System.Globalization
@@ -179,7 +179,7 @@
                                                 <td class="px-5 py-4 text-sm text-gray-700">@(egresado.FechaEgreso?.ToString() ?? "Sin registro")</td>
                                                 <td class="px-5 py-4 text-sm text-gray-700">@(egresado.SituacionLaboral ?? "Sin registro")</td>
                                                 <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700">@egresado.FechaUltimaActualizacion.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture)</td>
-                                                <td class="px-5 py-4"><a href="@($"/responsable/egresados/{egresado.IdEgresado}")" class="text-sm font-semibold text-[#003366] hover:underline">Ver perfil &gt;</a></td>
+                                                <td class="px-5 py-4"><a href="@($"responsable/egresados/{egresado.IdEgresado}")" class="text-sm font-semibold text-[#003366] hover:underline">Ver perfil &gt;</a></td>
                                             </tr>
                                         }
                                     </tbody>
@@ -229,9 +229,12 @@
     private string ObtenerClaseEnlace(string ruta, bool exacto = false)
     {
         var rutaActual = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
+        var rutaObjetivo = ruta.Trim('/');
         bool activo = exacto
-            ? rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase) || rutaActual.Equals("/responsable/egresados", StringComparison.OrdinalIgnoreCase)
-            : rutaActual.StartsWith(ruta, StringComparison.OrdinalIgnoreCase);
+            ? rutaActual.Equals(rutaObjetivo, StringComparison.OrdinalIgnoreCase)
+               || rutaActual.Equals("responsable/egresados", StringComparison.OrdinalIgnoreCase)
+             : rutaActual.Equals(rutaObjetivo, StringComparison.OrdinalIgnoreCase)
+               || rutaActual.StartsWith(rutaObjetivo + "/", StringComparison.OrdinalIgnoreCase);
 
         string clasesBase = "flex items-center px-3 py-2.5 text-sm font-medium rounded-r-md border-l-4 transition-colors ";
 

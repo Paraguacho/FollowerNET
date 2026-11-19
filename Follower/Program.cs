@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity;
 using Follower.Services;
 using Follower.Pages.Responsable;
 
-
 namespace Follower
 {
     public class Program
@@ -25,39 +24,41 @@ namespace Follower
             builder.Services.AddAuthorizationCore();
             builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
             builder.Services.AddScoped<IAutenticacionService, AutenticacionService>();
-            builder.Services.AddScoped<IEgresadoService,EgresadoService>();
+            builder.Services.AddScoped<IEgresadoService, EgresadoService>();
             builder.Services.AddScoped<IRegistroEgresadoService, RegistroEgresadoService>();
             builder.Services.AddScoped<ISolicitudesIngresoService, SolicitudesIngresoService>();
             builder.Services.AddScoped<IEgresadosBusquedaService, EgresadosBusquedaService>();
 
             var app = builder.Build();
 
+            // 
+            var pathBase = builder.Configuration["PathBase"];
+            if (!string.IsNullOrWhiteSpace(pathBase))
+            {
+                app.UsePathBase(pathBase);
+            }
 
-            app.MapBlazorHub();
-            app.MapControllerRoute(
-                name: "default",
-                pattern: "{controller=Home}/{action=Index}/{id?}");
-
-            app.MapFallbackToController("Blazor", "Home");
-
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
 
             app.UseHttpsRedirection();
+            app.UseStaticFiles();
+
             app.UseRouting();
 
             app.UseAuthorization();
 
             app.MapStaticAssets();
+            app.MapBlazorHub();
             app.MapControllerRoute(
                 name: "default",
                 pattern: "{controller=Home}/{action=Index}/{id?}")
                 .WithStaticAssets();
+
+            app.MapFallbackToController("Blazor", "Home");
 
             app.Run();
         }
