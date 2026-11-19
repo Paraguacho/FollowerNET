@@ -17,6 +17,8 @@ namespace Follower.Services
             EgresadosBusquedaFiltrosDto filtros,
             CancellationToken cancellationToken = default);
 
+        Task<ProgramaAutorizadoDto?> ObtenerProgramaAsignadoAsync(CancellationToken cancellationToken = default);
+
         // HU3.3
         // Flujo: recibe el identificador seleccionado y devuelve el perfil solo si pertenece al programa autorizado.
         // Función: permite navegar al detalle del egresado desde la tabla.

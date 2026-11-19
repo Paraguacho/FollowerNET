@@ -46,6 +46,13 @@
         public DateTime FechaUltimaActualizacion { get; init; }
     }
 
+    public class ProgramaAutorizadoDto
+    {
+        public int IdPrograma { get; set; }
+        public string Siglas { get; set; } = string.Empty;
+        public string NombrePrograma { get; set; } = string.Empty;
+    }
+
     public sealed class EgresadosBusquedaPaginaDto
     {
         public IReadOnlyList<EgresadosBusquedaFilaDto> Resultados { get; init; } = Array.Empty<EgresadosBusquedaFilaDto>();

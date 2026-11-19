@@ -11,6 +11,7 @@ namespace Follower.Services
     {
         private static readonly string[] SectoresDisponibles = { "Público", "Privado", "Educativo" };
         private static readonly string[] NivelesDisponibles = { "Maestría", "Doctorado", "Diplomado", "Especialidad" };
+        private readonly IServiceScopeFactory _scopeFactory;
         private static readonly string[] SituacionesLaboralesDisponibles =
         {
             "Empleo de tiempo completo",
@@ -19,6 +20,16 @@ namespace Follower.Services
             "Buscando empleo",
             "Estudiando exclusivamente"
         };
+
+        public EgresadosBusquedaService(
+            AuthenticationStateProvider authStateProvider,
+            ApplicationDbContext context,
+            IServiceScopeFactory scopeFactory)
+        {
+            _authStateProvider = authStateProvider;
+            _context = context;
+            _scopeFactory = scopeFactory;
+        }
 
         private readonly AuthenticationStateProvider _authStateProvider;
         private readonly ApplicationDbContext _context;
@@ -29,6 +40,42 @@ namespace Follower.Services
         {
             _authStateProvider = authStateProvider;
             _context = context;
+        }
+
+        public async Task<ProgramaAutorizadoDto?> ObtenerProgramaAsignadoAsync(CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                var authState = await _authStateProvider.GetAuthenticationStateAsync();
+                var usuario = authState.User;
+
+                if (usuario.Identity?.IsAuthenticated != true || !usuario.IsInRole("ResponsablePrograma"))
+                    return null;
+
+                var claimUsuarioId = usuario.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if (!int.TryParse(claimUsuarioId, out var usuarioId))
+                    return null;
+
+                using var scope = _scopeFactory.CreateScope();
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+                return await dbContext.ProgramasResponsables
+                    .Include(pr => pr.ProgramaEducativo)
+                    .Where(pr => pr.IdUsuario == usuarioId)
+                    .Select(pr => new ProgramaAutorizadoDto
+                    {
+                        IdPrograma = pr.IdPrograma,
+                        Siglas = pr.ProgramaEducativo.Siglas,
+                        NombrePrograma = pr.ProgramaEducativo.NombrePrograma
+                    })
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al cargar programa en sidebar: {ex.Message}");
+                return null;
+            }
         }
 
         public async Task<EgresadosBusquedaOpcionesDto> ObtenerOpcionesAsync(CancellationToken cancellationToken = default)
@@ -210,7 +257,7 @@ namespace Follower.Services
             };
         }
 
-        private async Task<(int IdPrograma, string Siglas)> ObtenerProgramaAutorizadoAsync(CancellationToken cancellationToken)
+        private async Task<(int IdPrograma, string Siglas, string NombrePrograma)> ObtenerProgramaAutorizadoAsync(CancellationToken cancellationToken)
         {
             var authenticationState = await _authStateProvider.GetAuthenticationStateAsync();
             var usuario = authenticationState.User;
@@ -229,14 +276,19 @@ namespace Follower.Services
             var programas = await _context.ProgramasResponsables
                 .Include(pr => pr.ProgramaEducativo)
                 .Where(pr => pr.IdUsuario == usuarioId)
-                .Select(pr => new { pr.IdPrograma, pr.ProgramaEducativo.Siglas })
+                .Select(pr => new
+                {
+                    pr.IdPrograma,
+                    pr.ProgramaEducativo.Siglas,
+                    pr.ProgramaEducativo.NombrePrograma // <-- Agregado aquí
+                })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
 
             return programas.Count switch
             {
                 0 => throw new UnauthorizedAccessException("No tienes un programa educativo autorizado."),
-                1 => (programas[0].IdPrograma, programas[0].Siglas),
+                1 => (programas[0].IdPrograma, programas[0].Siglas, programas[0].NombrePrograma),
                 _ => throw new InvalidOperationException("La búsqueda requiere que el responsable tenga un solo programa asignado.")
             };
         }

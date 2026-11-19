@@ -1,0 +1,109 @@
+﻿@using Follower.DTOs
+@using Follower.Services
+@inject NavigationManager Navigation
+@inject IEgresadosBusquedaService BusquedaService
+
+<aside class="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-4rem)] flex-shrink-0 hidden md:block">
+    <div class="p-6">
+        <!-- Encabezado del Programa -->
+        <div class="mb-6">
+            <p class="text-[10px] font-bold tracking-wider text-gray-400 uppercase">Gestión del programa</p>
+            @if (cargando)
+            {
+                <div class="h-6 w-20 bg-gray-200 rounded animate-pulse mt-1"></div>
+                <div class="h-3 w-40 bg-gray-100 rounded animate-pulse mt-2"></div>
+            }
+            else if (programa != null)
+            {
+                <h2 class="text-lg font-bold text-gray-900 mt-1">@programa.Siglas</h2>
+                <p class="text-xs text-gray-500 mt-0.5">@programa.NombrePrograma</p>
+            }
+            else
+            {
+                <h2 class="text-sm font-semibold text-gray-400 mt-1">Sin programa asignado</h2>
+            }
+        </div>
+
+        <!-- Menú  -->
+        <nav class="space-y-1">
+            <!-- egresados -->
+            <a href="/responsable" class="@ObtenerClaseEnlace("/responsable", exacto: true)">
+                <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                <span>Consulta de egresados</span>
+            </a>
+
+            <!--  indicadores -->
+            <a href="/responsable/indicadores" class="@ObtenerClaseEnlace("/responsable/indicadores")">
+                <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Panel de indicadores</span>
+            </a>
+
+            <!-- egresados -->
+            <a href="/responsable/reportes" class="@ObtenerClaseEnlace("/responsable/reportes")">
+                <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                <span>Reportes de egresados</span>
+            </a>
+        </nav>
+
+        <!-- Análisis  -->
+        <div class="mt-8">
+            <p class="px-3 text-[10px] font-bold tracking-wider text-gray-400 uppercase mb-2">Análisis especializado</p>
+            <nav class="space-y-1">
+                <a href="/responsable/analisis-longitudinal" class="@ObtenerClaseEnlace("/responsable/analisis-longitudinal")">
+                    <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
+                    </svg>
+                    <span>Análisis longitudinal</span>
+                </a>
+
+                <a href="/responsable/produccion-cientifica" class="@ObtenerClaseEnlace("/responsable/produccion-cientifica")">
+                    <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span>Producción científica</span>
+                </a>
+
+                <a href="/responsable/analisis-cualitativo" class="@ObtenerClaseEnlace("/responsable/analisis-cualitativo")">
+                    <svg class="w-4 h-4 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                    </svg>
+                    <span>Análisis cualitativo</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+</aside>
+
+@code {
+    private ProgramaAutorizadoDto? programa;
+    private bool cargando = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        programa = await BusquedaService.ObtenerProgramaAsignadoAsync();
+        cargando = false;
+    }
+
+    private string ObtenerClaseEnlace(string ruta, bool exacto = false)
+    {
+        var rutaActual = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
+        bool activo = exacto
+            ? rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase) || rutaActual.Equals("/responsable/egresados", StringComparison.OrdinalIgnoreCase)
+            : rutaActual.StartsWith(ruta, StringComparison.OrdinalIgnoreCase);
+
+        string clasesBase = "flex items-center px-3 py-2.5 text-sm font-medium rounded-r-md border-l-4 transition-colors ";
+
+        if (activo)
+        {
+            return clasesBase + "border-[#003366] bg-blue-50 text-[#003366]";
+        }
+
+        return clasesBase + "border-transparent text-gray-600 hover:bg-gray-50 hover:text-gray-900";
+    }
+}
