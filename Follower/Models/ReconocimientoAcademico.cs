@@ -19,18 +19,15 @@ namespace Follower.Models
         [MaxLength(100)]
         public string? Nivel { get; set; } // candidato nivel 1 etc
 
-        [Required(ErrorMessage = "El año de inicio es obligatorio.")]
         [Range(1950, 2100, ErrorMessage = "Ingresa un año de inicio válido.")]
         public int? AnoInicio { get; set; }
 
         [Range(1950, 2100, ErrorMessage = "Ingresa un año de fin válido.")]
-        public int AnoFin { get; set; }
+        public int? AnoFin { get; set; }
 
-        [Required(ErrorMessage = "El nombre del reconocimiento es obligatorio.")]
         [MaxLength(250)]
         public string? NombreReconocimiento { get; set; }
 
-        [Required(ErrorMessage = "La institución otorgante es obligatoria.")]
         [MaxLength(200)]
         public string? InstitucionOtorgante { get; set; }
 

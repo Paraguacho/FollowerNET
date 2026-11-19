@@ -107,16 +107,27 @@ namespace Follower.Services
         }
 
         public async Task<Egresado?> ObtenerPerfilAutorizadoAsync(
-            int idEgresado,
-            CancellationToken cancellationToken = default)
+     int idEgresado,
+     CancellationToken cancellationToken = default)
         {
             if (idEgresado <= 0) return null;
 
             var programa = await ObtenerProgramaAutorizadoAsync(cancellationToken);
 
             return await _context.Egresados
+                .Include(e => e.PerfilAcademico)
+                .Include(e => e.SituacionLaboral)
                 .Include(e => e.ExperienciasLaborales)
                 .Include(e => e.FormacionesAcademicas)
+                .Include(e => e.ProductividadesCientificas)
+                    .ThenInclude(p => p.Coautores)
+                .Include(e => e.ProyectosInvestigacion)
+                .Include(e => e.ReconocimientosAcademicos)
+                .Include(e => e.ContribucionesSociales)
+                .Include(e => e.ValoresCamposPersonalizados)
+                    .ThenInclude(v => v.CampoPersonalizado)
+                        .ThenInclude(c => c.SeccionPersonalizada)
+                .AsSplitQuery()
                 .AsNoTracking()
                 .FirstOrDefaultAsync(e => e.IdEgresado == idEgresado && e.IdPrograma == programa.IdPrograma, cancellationToken);
         }

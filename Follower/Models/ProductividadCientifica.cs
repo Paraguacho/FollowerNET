@@ -37,7 +37,6 @@ namespace Follower.Models
         [MaxLength(50)]
         public string? Isbn { get; set; }
 
-        [Required(ErrorMessage = "El tipo de participación es obligatorio.")]
         [MaxLength(100)]
         public string? Participacion { get; set; }
 

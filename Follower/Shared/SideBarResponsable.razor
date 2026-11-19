@@ -94,7 +94,9 @@
     {
         var rutaActual = "/" + Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         bool activo = exacto
-            ? rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase) || rutaActual.Equals("/responsable/egresados", StringComparison.OrdinalIgnoreCase)
+            ? rutaActual.Equals(ruta, StringComparison.OrdinalIgnoreCase)
+              || rutaActual.Equals("/responsable/egresados", StringComparison.OrdinalIgnoreCase)
+              || rutaActual.StartsWith("/responsable/egresados/", StringComparison.OrdinalIgnoreCase)
             : rutaActual.StartsWith(ruta, StringComparison.OrdinalIgnoreCase);
 
         string clasesBase = "flex items-center px-3 py-2.5 text-sm font-medium rounded-r-md border-l-4 transition-colors ";

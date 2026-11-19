@@ -304,23 +304,23 @@
         errores.Clear();
         registroEnEdicion = rec;
         nuevoRegistro = new ReconocimientoAcademico
-        {
-            IdReconomiento = rec.IdReconomiento,
-            EgresadoId = rec.EgresadoId,
-            TipoRegistro = rec.TipoRegistro,
-            Nivel = rec.Nivel,
-            AnoInicio = rec.AnoInicio,
-            AnoFin = rec.AnoFin,
-            NombreReconocimiento = rec.NombreReconocimiento,
-            InstitucionOtorgante = rec.InstitucionOtorgante,
-            MotivoOCategoria = rec.MotivoOCategoria,
-            TipoParticipacion = rec.TipoParticipacion,
-            EstadoActual = rec.EstadoActual,
-            ArchivoEvidencia = rec.ArchivoEvidencia
-        };
+            {
+                IdReconomiento = rec.IdReconomiento,
+                EgresadoId = rec.EgresadoId,
+                TipoRegistro = rec.TipoRegistro,
+                Nivel = rec.Nivel,
+                AnoInicio = rec.AnoInicio,
+                AnoFin = rec.AnoFin,
+                NombreReconocimiento = rec.NombreReconocimiento,
+                InstitucionOtorgante = rec.InstitucionOtorgante,
+                MotivoOCategoria = rec.MotivoOCategoria,
+                TipoParticipacion = rec.TipoParticipacion,
+                EstadoActual = rec.EstadoActual,
+                ArchivoEvidencia = rec.ArchivoEvidencia
+            };
 
         fechaInicioTemp = rec.AnoInicio is >= 1950 and <= 2100 ? new DateTime(rec.AnoInicio.Value, 1, 1) : null;
-        fechaFinTemp = rec.AnoFin is >= 1950 and <= 2100 ? new DateTime(rec.AnoFin, 1, 1) : null;
+        fechaFinTemp = rec.AnoFin is >= 1950 and <= 2100 ? new DateTime(rec.AnoFin.Value, 1, 1) : null;
         mostrandoFormulario = true;
     }
 

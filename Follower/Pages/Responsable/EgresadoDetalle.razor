@@ -5,220 +5,415 @@
 @using Follower.Services
 @using Microsoft.AspNetCore.Authorization
 @inject IEgresadosBusquedaService EgresadosBusquedaService
+@using Follower.Shared
 
-<div class="min-h-screen bg-gray-50 font-sans">
-	<div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-		<a href="/responsable/egresados" class="text-sm font-semibold text-[#003366] hover:underline">&larr; Volver a egresados</a>
 
-		@if (cargando)
-		{
-			<div class="mt-6 rounded-xl border border-gray-200 bg-white p-12 text-center text-gray-500">Cargando perfil...</div>
-		}
-		else if (!string.IsNullOrWhiteSpace(error))
-		{
-			<div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">@error</div>
-		}
-		else if (egresado is not null)
-		{
-			<header class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-				<p class="text-sm font-semibold uppercase tracking-wider text-[#003366]">Perfil de egresado</p>
-				<h1 class="mt-1 text-3xl font-bold text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</h1>
-				<p class="mt-2 text-sm text-gray-500">Última actualización: @FormatearFecha(egresado.FechaUltimaActualizacion)</p>
-			</header>
 
-			<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-				<h2 class="text-xl font-bold text-gray-900">Información general</h2>
-				<dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-					<div><dt class="text-sm text-gray-500">Año de egreso</dt><dd class="mt-1 font-medium text-gray-900">@(egresado.FechaEgreso?.ToString() ?? "Sin registro")</dd></div>
-					<div><dt class="text-sm text-gray-500">Teléfono</dt><dd class="mt-1 font-medium text-gray-900">@(egresado.Telefono ?? "Sin registro")</dd></div>
-					<div><dt class="text-sm text-gray-500">Ciudad</dt><dd class="mt-1 font-medium text-gray-900">@(egresado.Ciudad ?? "Sin registro")</dd></div>
-					<div><dt class="text-sm text-gray-500">Estado</dt><dd class="mt-1 font-medium text-gray-900">@(egresado.Estado ?? "Sin registro")</dd></div>
-					<div><dt class="text-sm text-gray-500">País</dt><dd class="mt-1 font-medium text-gray-900">@(egresado.Pais ?? "Sin registro")</dd></div>
-				</dl>
-				@if (egresado.PerfilAcademico is not null)
-				{
-					<div class="mt-5 border-t border-gray-100 pt-4">
-						<h3 class="font-semibold text-gray-900">Perfiles académicos</h3>
-						<dl class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-							@if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.Orcid))
-							{
-								<div><dt class="text-sm text-gray-500">ORCID</dt><dd class="break-all text-sm text-gray-900">@egresado.PerfilAcademico.Orcid</dd></div>
-							}
-							@if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.GoogleScholar))
-							{
-								<div><dt class="text-sm text-gray-500">Google Scholar</dt><dd class="break-all text-sm text-gray-900">@egresado.PerfilAcademico.GoogleScholar</dd></div>
-							}
-							@if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.ResearchGate))
-							{
-								<div><dt class="text-sm text-gray-500">ResearchGate</dt><dd class="break-all text-sm text-gray-900">@egresado.PerfilAcademico.ResearchGate</dd></div>
-							}
-							@if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.AcademiaEdu))
-							{
-								<div><dt class="text-sm text-gray-500">Academia.edu</dt><dd class="break-all text-sm text-gray-900">@egresado.PerfilAcademico.AcademiaEdu</dd></div>
-							}
-							@if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.ScopusId))
-							{
-								<div><dt class="text-sm text-gray-500">Scopus ID</dt><dd class="break-all text-sm text-gray-900">@egresado.PerfilAcademico.ScopusId</dd></div>
-							}
-							@if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.LinkedIn))
-							{
-								<div><dt class="text-sm text-gray-500">LinkedIn</dt><dd class="break-all text-sm text-gray-900">@egresado.PerfilAcademico.LinkedIn</dd></div>
-							}
-						</dl>
-					</div>
-				}
-			</section>
+<div class="flex min-h-[calc(100vh-4rem)] bg-gray-50 font-sans">
+    <!-- Panel izquierdo -->
+    <SidebarResponsable />
 
-			<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-				<h2 class="text-xl font-bold text-gray-900">Situación y experiencia laboral</h2>
-				<p class="mt-3 text-sm text-gray-700"><span class="font-semibold">Situación actual:</span> @(egresado.SituacionLaboral?.EstadoActual ?? "Sin registro")</p>
-				@if (egresado.ExperienciasLaborales.Count > 0)
-				{
-					<div class="mt-4 space-y-4">
-						@foreach (var experiencia in egresado.ExperienciasLaborales.OrderByDescending(x => x.EsEmpleoActual).ThenByDescending(x => x.FechaInicio))
-						{
-							<article class="rounded-lg border border-gray-200 p-4">
-								<h3 class="font-semibold text-gray-900">@experiencia.Puesto · @experiencia.Institucion</h3>
-								<p class="mt-1 text-sm text-gray-600">@(experiencia.Sector ?? "Sector sin registro") · @(experiencia.EsEmpleoActual ? "Empleo actual" : "Experiencia anterior")</p>
-								<p class="mt-1 text-sm text-gray-600">@FormatearFecha(experiencia.FechaInicio) – @FormatearFecha(experiencia.FechaFin)</p>
-								@if (!string.IsNullOrWhiteSpace(experiencia.RelacionConFormacion))
-								{
-									<p class="mt-2 text-sm text-gray-700">Relación con su formación: @experiencia.RelacionConFormacion</p>
-								}
-								@if (!string.IsNullOrWhiteSpace(experiencia.ActividadesPrincipales))
-								{
-									<p class="mt-2 whitespace-pre-line text-sm text-gray-700">@experiencia.ActividadesPrincipales</p>
-								}
-							</article>
-						}
-					</div>
-				}
-				else
-				{
-					<p class="mt-3 text-sm text-gray-500">Sin experiencias laborales registradas.</p>
-				}
-			</section>
+    <!-- Contenido principal -->
+    <main class="flex-1 overflow-x-auto">
+        <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
 
-			<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-				<h2 class="text-xl font-bold text-gray-900">Formación académica</h2>
-				@if (egresado.FormacionesAcademicas.Count > 0)
-				{
-					<div class="mt-4 space-y-4">
-						@foreach (var formacion in egresado.FormacionesAcademicas.OrderByDescending(x => x.EsFormacionActual).ThenByDescending(x => x.FechaInicio))
-						{
-							<article class="rounded-lg border border-gray-200 p-4">
-								<h3 class="font-semibold text-gray-900">@formacion.NombrePrograma</h3>
-								<p class="mt-1 text-sm text-gray-600">@(formacion.Grado ?? "Grado sin registro") · @(formacion.Institucion ?? "Institución sin registro")</p>
-								<p class="mt-1 text-sm text-gray-600">@(formacion.EstadoPrograma ?? "Estado sin registro"), @(formacion.Pais ?? "País sin registro") · @FormatearFecha(formacion.FechaInicio) – @FormatearFecha(formacion.FechaFin)</p>
-								@if (formacion.EsFormacionActual)
-								{
-									<p class="mt-2 text-sm font-semibold text-[#003366]">Formación actual</p>
-								}
-								@if (formacion.RecibioBeca)
-								{
-									<p class="mt-1 text-sm text-gray-700">Apoyo: @(formacion.TipoApoyo ?? "Beca") · @(formacion.InstitucionOtorgante ?? "Institución otorgante sin registro")</p>
-								}
-							</article>
-						}
-					</div>
-				}
-				else
-				{
-					<p class="mt-3 text-sm text-gray-500">Sin formaciones académicas registradas.</p>
-				}
-			</section>
+            <!-- Breadcrumb y Encabezado -->
+            <nav class="text-xs text-gray-500 mb-2">
+                <span>Inicio</span> <span class="mx-1">/</span>
+                <a href="/responsable/egresados" class="hover:text-[#003366] hover:underline">Consulta de egresados</a> <span class="mx-1">/</span>
+                <span class="font-medium text-gray-900">Detalle de egresado</span>
+            </nav>
 
-			@if (egresado.ValoresCamposPersonalizados.Count > 0)
-			{
-				<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-					<h2 class="text-xl font-bold text-gray-900">Datos adicionales del programa</h2>
-					<dl class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-						@foreach (var valor in egresado.ValoresCamposPersonalizados.OrderBy(x => x.CampoPersonalizado.SeccionPersonalizada.OrdenAparicion).ThenBy(x => x.CampoPersonalizado.Orden))
-						{
-							<div><dt class="text-sm text-gray-500">@valor.CampoPersonalizado.SeccionPersonalizada.TituloSeccion · @valor.CampoPersonalizado.NombreEtiqueta</dt><dd class="mt-1 whitespace-pre-line font-medium text-gray-900">@(valor.ValorCapturado ?? "Sin registro")</dd></div>
-						}
-					</dl>
-				</section>
-			}
+            <h1 class="text-2xl font-bold text-gray-900">Detalle de egresado</h1>
+            <p class="mt-1 text-sm text-gray-500">Consulta el expediente completo y la evolución profesional del egresado.</p>
 
-			@if (egresado.ProductividadesCientificas.Count > 0)
-			{
-				<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-					<h2 class="text-xl font-bold text-gray-900">Productividad científica</h2>
-					<div class="mt-4 space-y-4">
-						@foreach (var producto in egresado.ProductividadesCientificas.OrderByDescending(x => x.AnoPublicacion))
-						{
-							<article class="rounded-lg border border-gray-200 p-4">
-								<h3 class="font-semibold text-gray-900">@producto.Titulo</h3>
-								<p class="mt-1 text-sm text-gray-600">@producto.TipoProducto · @(producto.AnoPublicacion?.ToString() ?? "Año sin registro")</p>
-								<p class="mt-1 text-sm text-gray-600">@(producto.RevistaOLibro ?? producto.Editorial ?? "Publicación sin registro") · @(producto.Participacion ?? "Participación sin registro")</p>
-								@if (producto.Coautores.Count > 0)
-								{
-									<p class="mt-2 text-sm text-gray-700">Coautores: @string.Join(", ", producto.Coautores.Select(x => $"{x.Nombres} {x.ApellidoPaterno} {x.ApellidoMaterno}".Trim()))</p>
-								}
-							</article>
-						}
-					</div>
-				</section>
-			}
+            <div class="mt-4">
+                <a href="/responsable/egresados" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                    Volver a resultados
+                </a>
+            </div>
 
-			@if (egresado.ProyectosInvestigacion.Count > 0)
-			{
-				<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-					<h2 class="text-xl font-bold text-gray-900">Proyectos de investigación</h2>
-					<div class="mt-4 space-y-4">
-						@foreach (var proyecto in egresado.ProyectosInvestigacion)
-						{
-							<article class="rounded-lg border border-gray-200 p-4">
-								<h3 class="font-semibold text-gray-900">@proyecto.Nombre</h3>
-								<p class="mt-1 text-sm text-gray-600">@proyecto.Institucion · @proyecto.Periodo</p>
-								<p class="mt-1 text-sm text-gray-600">@proyecto.Funcion · @proyecto.Estado</p>
-							</article>
-						}
-					</div>
-				</section>
-			}
+            <!-- Banner Sólo consulta -->
+            <div class="mt-5 flex items-center gap-2.5 rounded-lg border border-blue-200 bg-blue-50/70 px-4 py-3 text-xs text-[#003366]">
+                <svg class="h-4 w-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                <span><strong>Sólo consulta</strong> · Perfil autorizado de tu programa educativo.</span>
+            </div>
 
-			@if (egresado.ReconocimientosAcademicos.Count > 0)
-			{
-				<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-					<h2 class="text-xl font-bold text-gray-900">Reconocimientos académicos</h2>
-					<div class="mt-4 space-y-4">
-						@foreach (var reconocimiento in egresado.ReconocimientosAcademicos.OrderByDescending(x => x.AnoFin))
-						{
-							<article class="rounded-lg border border-gray-200 p-4">
-								<h3 class="font-semibold text-gray-900">@(reconocimiento.NombreReconocimiento ?? reconocimiento.TipoRegistro)</h3>
-								<p class="mt-1 text-sm text-gray-600">@reconocimiento.TipoRegistro · @(reconocimiento.Nivel ?? "Nivel sin registro") · @reconocimiento.AnoFin</p>
-								<p class="mt-1 text-sm text-gray-600">@(reconocimiento.InstitucionOtorgante ?? "Institución sin registro") · @(reconocimiento.MotivoOCategoria ?? "Sin categoría")</p>
-							</article>
-						}
-					</div>
-				</section>
-			}
+            @if (cargando)
+            {
+                <div class="mt-6 rounded-xl border border-gray-200 bg-white p-12 text-center text-sm text-gray-500">Cargando perfil...</div>
+            }
+            else if (!string.IsNullOrWhiteSpace(error))
+            {
+                <div class="mt-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">@error</div>
+            }
+            else if (egresado is not null)
+            {
+                <!-- Tarjeta Resumen del Egresado -->
+                <header class="mt-5 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-blue-50 text-lg font-bold text-[#003366] border border-blue-100">
+                                @ObtenerIniciales(egresado.Nombres, egresado.ApellidoPaterno)
+                            </div>
+                            <div>
+                                <div class="flex flex-wrap items-center gap-2.5">
+                                    <h2 class="text-xl font-bold text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</h2>
+                                    <span class="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-semibold text-emerald-700 border border-emerald-200">Egresado</span>
+                                </div>
+                                <p class="mt-1 text-sm text-gray-600">
+                                    Año de egreso: <span class="font-medium text-gray-900">@(egresado.FechaEgreso?.ToString() ?? "Sin registro")</span>
+                                    @if (!string.IsNullOrWhiteSpace(egresado.SituacionLaboral?.EstadoActual))
+                                    {
+                                        <span class="mx-2 text-gray-300">•</span>
+                                        <span>@egresado.SituacionLaboral.EstadoActual</span>
+                                    }
+                                </p>
+                            </div>
+                        </div>
 
-			@if (egresado.ContribucionesSociales.Count > 0)
-			{
-				<section class="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-					<h2 class="text-xl font-bold text-gray-900">Contribuciones sociales</h2>
-					<div class="mt-4 space-y-4">
-						@foreach (var contribucion in egresado.ContribucionesSociales)
-						{
-							<article class="rounded-lg border border-gray-200 p-4">
-								<h3 class="font-semibold text-gray-900">@contribucion.NombreActividad</h3>
-								<p class="mt-1 text-sm text-gray-600">@contribucion.TipoContribucion · Sector atendido: @contribucion.SectorAtendido</p>
-								<p class="mt-2 whitespace-pre-line text-sm text-gray-700">@contribucion.Descripcion</p>
-								@if (!string.IsNullOrWhiteSpace(contribucion.Resultados))
-								{
-									<p class="mt-2 whitespace-pre-line text-sm text-gray-700"><span class="font-semibold">Resultados:</span> @contribucion.Resultados</p>
-								}
-							</article>
-						}
-					</div>
-				</section>
-			}
-		}
-	</div>
+                        <div class="flex flex-col items-start sm:items-end justify-between gap-2">
+                            <button type="button" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
+                                <svg class="h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                Descargar CV (PDF)
+                            </button>
+                            <p class="text-[11px] text-gray-400">Actualizado el @FormatearFecha(egresado.FechaUltimaActualizacion)</p>
+                        </div>
+                    </div>
+                </header>
+
+                <!-- Encabezado de Acordeones -->
+                <div class="mt-8 mb-4 flex items-end justify-between">
+                    <h3 class="text-base font-bold text-gray-900">Expediente completo</h3>
+                    <span class="text-xs text-gray-400">Haz clic en cada sección para expandirla</span>
+                </div>
+
+                <div class="space-y-3">
+                    <!-- 1. INFORMACIÓN GENERAL -->
+                    <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <button type="button" @onclick='() => ToggleSeccion("general")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-bold text-gray-900">Información General</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">Datos de contacto y académicos</span>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("general") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+                        @if (EstaAbierta("general"))
+                        {
+                            <div class="border-t border-gray-100 px-6 py-5">
+                                <dl class="grid gap-5 sm:grid-cols-3">
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Nombre(s)</dt><dd class="mt-1 text-sm font-medium text-gray-900">@egresado.Nombres</dd></div>
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Apellido Paterno</dt><dd class="mt-1 text-sm font-medium text-gray-900">@egresado.ApellidoPaterno</dd></div>
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Apellido Materno</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.ApellidoMaterno ?? "—")</dd></div>
+
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Teléfono de contacto</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.Telefono ?? "Sin registro")</dd></div>
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Año de egreso</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.FechaEgreso?.ToString() ?? "Sin registro")</dd></div>
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Situación laboral</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.SituacionLaboral?.EstadoActual ?? "Sin registro")</dd></div>
+
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Ciudad de residencia</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.Ciudad ?? "Sin registro")</dd></div>
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Estado</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.Estado ?? "Sin registro")</dd></div>
+                                    <div><dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">País</dt><dd class="mt-1 text-sm font-medium text-gray-900">@(egresado.Pais ?? "Sin registro")</dd></div>
+                                </dl>
+
+                                @if (egresado.PerfilAcademico is not null)
+                                {
+                                    <div class="mt-5 flex flex-wrap gap-x-6 gap-y-2 border-t border-gray-100 pt-4 text-xs">
+                                        @if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.Orcid))
+                                        {
+                                            <div><span class="font-bold text-gray-400">ORCID:</span> <span class="text-gray-800">@egresado.PerfilAcademico.Orcid</span></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.GoogleScholar))
+                                        {
+                                            <div><span class="font-bold text-gray-400">Google Scholar:</span> <span class="text-[#003366]">@egresado.PerfilAcademico.GoogleScholar</span></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.ResearchGate))
+                                        {
+                                            <div><span class="font-bold text-gray-400">ResearchGate:</span> <span class="text-[#003366]">@egresado.PerfilAcademico.ResearchGate</span></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.AcademiaEdu))
+                                        {
+                                            <div><span class="font-bold text-gray-400">Academia.edu:</span> <span class="text-[#003366]">@egresado.PerfilAcademico.AcademiaEdu</span></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.ScopusId))
+                                        {
+                                            <div><span class="font-bold text-gray-400">Scopus ID:</span> <span class="text-gray-800">@egresado.PerfilAcademico.ScopusId</span></div>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(egresado.PerfilAcademico.LinkedIn))
+                                        {
+                                            <div><span class="font-bold text-gray-400">LinkedIn:</span> <span class="text-[#003366]">@egresado.PerfilAcademico.LinkedIn</span></div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <!-- 2. HISTORIAL DE EMPLEOS -->
+                    <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <button type="button" @onclick='() => ToggleSeccion("empleos")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-bold text-gray-900">Historial de empleos</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">@egresado.ExperienciasLaborales.Count @(egresado.ExperienciasLaborales.Count == 1 ? "registro" : "registros")</span>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("empleos") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+                        @if (EstaAbierta("empleos"))
+                        {
+                            <div class="border-t border-gray-100 px-6 py-5 space-y-4">
+                                @if (egresado.ExperienciasLaborales.Count > 0)
+                                {
+                                    @foreach (var exp in egresado.ExperienciasLaborales.OrderByDescending(x => x.EsEmpleoActual).ThenByDescending(x => x.FechaInicio))
+                                    {
+                                        <article class="rounded-lg border border-gray-200 p-4">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <h4 class="font-bold text-gray-900 text-sm">@exp.Puesto</h4>
+                                                    <p class="text-xs font-medium text-[#003366] mt-0.5">@exp.Institucion <span class="text-gray-400 font-normal">· @(exp.Sector ?? "Sector sin registro")</span></p>
+                                                </div>
+                                                <span class="rounded-full px-2.5 py-0.5 text-[11px] font-semibold @(exp.EsEmpleoActual ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-gray-100 text-gray-600")">
+                                                    @(exp.EsEmpleoActual ? "Vigente" : "Concluido")
+                                                </span>
+                                            </div>
+                                            <p class="mt-2 text-xs text-gray-500">@FormatearFecha(exp.FechaInicio) – @(exp.EsEmpleoActual ? "Presente" : FormatearFecha(exp.FechaFin))</p>
+                                            @if (!string.IsNullOrWhiteSpace(exp.ActividadesPrincipales))
+                                            {
+                                                <p class="mt-2 whitespace-pre-line text-xs text-gray-700">@exp.ActividadesPrincipales</p>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(exp.RelacionConFormacion))
+                                            {
+                                                <div class="mt-3 border-t border-gray-100 pt-2">
+                                                    <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400">Relación con formación:</span>
+                                                    <span class="ml-1 text-xs font-medium text-gray-800">@exp.RelacionConFormacion</span>
+                                                </div>
+                                            }
+                                        </article>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-gray-500 italic">Sin experiencias laborales registradas.</p>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <!-- 3. FORMACIÓN ACADÉMICA -->
+                    <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <button type="button" @onclick='() => ToggleSeccion("formacion")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-bold text-gray-900">Formación académica</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">@egresado.FormacionesAcademicas.Count @(egresado.FormacionesAcademicas.Count == 1 ? "estudio registrado" : "estudios registrados")</span>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("formacion") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+                        @if (EstaAbierta("formacion"))
+                        {
+                            <div class="border-t border-gray-100 px-6 py-5 space-y-4">
+                                @if (egresado.FormacionesAcademicas.Count > 0)
+                                {
+                                    @foreach (var formacion in egresado.FormacionesAcademicas.OrderByDescending(x => x.EsFormacionActual).ThenByDescending(x => x.FechaInicio))
+                                    {
+                                        <article class="rounded-lg border border-gray-200 p-4">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <div>
+                                                    <h4 class="font-bold text-gray-900 text-sm">@formacion.NombrePrograma</h4>
+                                                    <p class="text-xs font-medium text-[#003366] mt-0.5">@(formacion.Grado ?? "Grado sin registro") · @(formacion.Institucion ?? "Institución sin registro")</p>
+                                                </div>
+                                                @if (formacion.EsFormacionActual)
+                                                {
+                                                    <span class="rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-semibold text-[#003366] border border-blue-200">En curso</span>
+                                                }
+                                            </div>
+                                            <p class="mt-2 text-xs text-gray-500">@(formacion.EstadoPrograma ?? "Estado sin registro"), @(formacion.Pais ?? "País sin registro") · @FormatearFecha(formacion.FechaInicio) – @FormatearFecha(formacion.FechaFin)</p>
+                                            @if (formacion.RecibioBeca)
+                                            {
+                                                <p class="mt-2 text-xs text-gray-700"><span class="font-semibold">Apoyo:</span> @(formacion.TipoApoyo ?? "Beca") · @(formacion.InstitucionOtorgante ?? "Sin institución")</p>
+                                            }
+                                        </article>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-gray-500 italic">Sin formaciones académicas registradas.</p>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <!-- 4. PRODUCTIVIDAD CIENTÍFICA -->
+                    <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <button type="button" @onclick='() => ToggleSeccion("productividad")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-bold text-gray-900">Productividad científica</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">@egresado.ProductividadesCientificas.Count @(egresado.ProductividadesCientificas.Count == 1 ? "producto registrado" : "productos registrados")</span>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("productividad") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+                        @if (EstaAbierta("productividad"))
+                        {
+                            <div class="border-t border-gray-100 px-6 py-5 space-y-4">
+                                @if (egresado.ProductividadesCientificas.Count > 0)
+                                {
+                                    @foreach (var producto in egresado.ProductividadesCientificas.OrderByDescending(x => x.AnoPublicacion))
+                                    {
+                                        <article class="rounded-lg border border-gray-200 p-4">
+                                            <p class="text-[11px] font-bold uppercase tracking-wide text-[#003366]">@producto.TipoProducto</p>
+                                            <h4 class="mt-0.5 font-bold text-gray-900 text-sm">@producto.Titulo</h4>
+                                            <p class="mt-1 text-xs text-gray-600">@(producto.RevistaOLibro ?? producto.Editorial ?? "Publicación sin registro") · @(producto.AnoPublicacion?.ToString() ?? "Sin año")</p>
+                                            @if (producto.Coautores.Count > 0)
+                                            {
+                                                <p class="mt-2 text-xs text-gray-700"><span class="font-semibold">Coautores:</span> @string.Join(", ", producto.Coautores.Select(x => $"{x.Nombres} {x.ApellidoPaterno} {x.ApellidoMaterno}".Trim()))</p>
+                                            }
+                                        </article>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-gray-500 italic">Sin productividad científica registrada.</p>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <!-- 5. PROYECTOS DE INVESTIGACIÓN -->
+                    <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <button type="button" @onclick='() => ToggleSeccion("proyectos")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-bold text-gray-900">Proyectos de investigación</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">@egresado.ProyectosInvestigacion.Count @(egresado.ProyectosInvestigacion.Count == 1 ? "proyecto" : "proyectos")</span>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("proyectos") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+                        @if (EstaAbierta("proyectos"))
+                        {
+                            <div class="border-t border-gray-100 px-6 py-5 space-y-4">
+                                @if (egresado.ProyectosInvestigacion.Count > 0)
+                                {
+                                    @foreach (var proyecto in egresado.ProyectosInvestigacion)
+                                    {
+                                        <article class="rounded-lg border border-gray-200 p-4">
+                                            <div class="flex items-start justify-between gap-2">
+                                                <h4 class="font-bold text-gray-900 text-sm">@proyecto.Nombre</h4>
+                                                <span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-semibold text-gray-700">@proyecto.Estado</span>
+                                            </div>
+                                            <p class="mt-1 text-xs text-gray-600">@proyecto.Institucion · @proyecto.Periodo</p>
+                                            <p class="mt-1 text-xs text-gray-500">Función: <span class="font-medium text-gray-800">@proyecto.Funcion</span></p>
+                                        </article>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-gray-500 italic">Sin proyectos de investigación registrados.</p>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <!-- 6. DISTINCIONES Y MEMBRESÍAS ACADÉMICAS -->
+                    <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <button type="button" @onclick='() => ToggleSeccion("reconocimientos")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-bold text-gray-900">Distinciones y membresías académicas</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">@egresado.ReconocimientosAcademicos.Count @(egresado.ReconocimientosAcademicos.Count == 1 ? "distinción registrada" : "distinciones registradas")</span>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("reconocimientos") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+                        @if (EstaAbierta("reconocimientos"))
+                        {
+                            <div class="border-t border-gray-100 px-6 py-5 space-y-4">
+                                @if (egresado.ReconocimientosAcademicos.Count > 0)
+                                {
+                                    @foreach (var rec in egresado.ReconocimientosAcademicos.OrderByDescending(x => x.AnoFin))
+                                    {
+                                        <article class="rounded-lg border border-gray-200 p-4">
+                                            <p class="text-[11px] font-bold uppercase tracking-wide text-[#003366]">@rec.TipoRegistro</p>
+                                            <h4 class="mt-0.5 font-bold text-gray-900 text-sm">@(rec.NombreReconocimiento ?? rec.Nivel ?? rec.TipoRegistro)</h4>
+                                            <p class="mt-1 text-xs text-gray-600">@(rec.InstitucionOtorgante ?? "Institución sin registro") @(rec.AnoFin > 0 ? $"· Vigencia/Año: {rec.AnoFin}" : "")</p>
+                                            @if (!string.IsNullOrWhiteSpace(rec.MotivoOCategoria))
+                                            {
+                                                <p class="mt-1 text-xs text-gray-500 italic">@rec.MotivoOCategoria</p>
+                                            }
+                                        </article>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-gray-500 italic">Sin distinciones ni membresías registradas.</p>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <!-- 7. CONTRIBUCIÓN SOCIAL Y EDUCATIVA -->
+                    <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        <button type="button" @onclick='() => ToggleSeccion("contribuciones")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                            <span class="text-sm font-bold text-gray-900">Contribución social y educativa</span>
+                            <div class="flex items-center gap-3">
+                                <span class="text-xs text-gray-400">@egresado.ContribucionesSociales.Count @(egresado.ContribucionesSociales.Count == 1 ? "actividad reportada" : "actividades reportadas")</span>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("contribuciones") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </div>
+                        </button>
+                        @if (EstaAbierta("contribuciones"))
+                        {
+                            <div class="border-t border-gray-100 px-6 py-5 space-y-4">
+                                @if (egresado.ContribucionesSociales.Count > 0)
+                                {
+                                    @foreach (var cont in egresado.ContribucionesSociales)
+                                    {
+                                        <article class="rounded-lg border border-gray-200 p-4">
+                                            <p class="text-[11px] font-bold uppercase tracking-wide text-[#003366]">@cont.TipoContribucion</p>
+                                            <h4 class="mt-0.5 font-bold text-gray-900 text-sm">@cont.NombreActividad</h4>
+                                            <p class="mt-1 text-xs text-gray-600">Sector atendido: @cont.SectorAtendido</p>
+                                            <p class="mt-2 whitespace-pre-line text-xs text-gray-700">@cont.Descripcion</p>
+                                            @if (!string.IsNullOrWhiteSpace(cont.Resultados))
+                                            {
+                                                <p class="mt-2 whitespace-pre-line text-xs text-gray-700"><span class="font-semibold">Resultados:</span> @cont.Resultados</p>
+                                            }
+                                        </article>
+                                    }
+                                }
+                                else
+                                {
+                                    <p class="text-sm text-gray-500 italic">Sin contribuciones sociales registradas.</p>
+                                }
+                            </div>
+                        }
+                    </section>
+
+                    <!-- 8. DATOS ADICIONALES DEL PROGRAMA -->
+                    @if (egresado.ValoresCamposPersonalizados.Count > 0)
+                    {
+                        <section class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                            <button type="button" @onclick='() => ToggleSeccion("adicionales")' class="flex w-full items-center justify-between px-6 py-4 text-left hover:bg-gray-50 transition-colors">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-bold text-gray-900">Evaluación y vinculación</span>
+                                    <span class="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase text-[#003366]">Exclusivo</span>
+                                </div>
+                                <svg class="h-4 w-4 text-gray-400 transform transition-transform @(EstaAbierta("adicionales") ? "rotate-180" : "")" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                            </button>
+                            @if (EstaAbierta("adicionales"))
+                            {
+                                <div class="border-t border-gray-100 px-6 py-5">
+                                    <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                        @foreach (var valor in egresado.ValoresCamposPersonalizados.OrderBy(x => x.CampoPersonalizado.SeccionPersonalizada.OrdenAparicion).ThenBy(x => x.CampoPersonalizado.Orden))
+                                        {
+                                            <div>
+                                                <dt class="text-[10px] font-bold uppercase tracking-wider text-gray-400">@valor.CampoPersonalizado.SeccionPersonalizada.TituloSeccion · @valor.CampoPersonalizado.NombreEtiqueta</dt>
+                                                <dd class="mt-1 whitespace-pre-line text-sm font-medium text-gray-900">@(valor.ValorCapturado ?? "Sin registro")</dd>
+                                            </div>
+                                        }
+                                    </dl>
+                                </div>
+                            }
+                        </section>
+                    }
+                </div>
+            }
+        </div>
+    </main>
 </div>
+
 
 @code {
 	[Parameter]
@@ -227,6 +422,25 @@
 	private Egresado? egresado;
 	private string? error;
 	private bool cargando = true;
+
+    private readonly HashSet<string> seccionesAbiertas = new() { "general", "empleos" };
+
+    private bool EstaAbierta(string seccion) => seccionesAbiertas.Contains(seccion);
+
+    private void ToggleSeccion(string seccion)
+    {
+        if (!seccionesAbiertas.Remove(seccion))
+        {
+            seccionesAbiertas.Add(seccion);
+        }
+    }
+
+    private static string ObtenerIniciales(string? nombres, string? apellidoPaterno)
+    {
+        var n = string.IsNullOrWhiteSpace(nombres) ? "" : nombres.Trim()[0].ToString().ToUpper();
+        var a = string.IsNullOrWhiteSpace(apellidoPaterno) ? "" : apellidoPaterno.Trim()[0].ToString().ToUpper();
+        return string.IsNullOrEmpty(n + a) ? "EG" : n + a;
+    }
 
 	// HU3.3
 	// Flujo: toma el ID de la ruta, solicita el perfil dentro del alcance autorizado y prepara estados de carga o error.
