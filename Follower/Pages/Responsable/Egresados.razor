@@ -14,7 +14,7 @@
     <SidebarResponsable />
 
     <!-- Contenido principal -->
-    <main class="flex-1 overflow-x-auto">
+    <main class="min-w-0 flex-1 overflow-x-auto">
         <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
             <div class="mb-8">
                 <p class="text-sm font-semibold uppercase tracking-wider text-[#003366]">Gestión de egresados</p>
@@ -118,7 +118,6 @@
                             </label>
                             <div class="flex items-end gap-3 xl:col-span-4">
                                 <button type="button" @onclick="AplicarFiltrosAsync" disabled="@buscando" class="rounded-lg bg-[#003366] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#002244] disabled:opacity-50">Aplicar filtros</button>
-                                <button type="button" @onclick="LimpiarTodosLosFiltrosAsync" disabled="@buscando" class="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50">Limpiar todos los filtros</button>
                             </div>
                         </div>
                     }
@@ -151,48 +150,116 @@
                     }
                     else
                     {
-                        <div class="mb-4">
-                            <h2 class="text-xl font-bold text-gray-900">Mostrando @totalResultados resultados</h2>
-                            <p class="mt-1 text-sm text-gray-500">@(FiltrosActivos.Count == 0 ? "Todos los egresados" : "Resultados según los criterios seleccionados") • Todos los perfiles pertenecen a @SiglasPrograma.</p>
-                            @if (buscando)
+                        <section class="mt-6">
+                            @if (totalResultados == 0)
                             {
-                                <p class="mt-1 text-xs text-gray-500" role="status">Actualizando resultados...</p>
-                            }
-                        </div>
-                        <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-                            <div class="overflow-x-auto">
-                                <table class="min-w-full divide-y divide-gray-200">
-                                    <thead class="bg-gray-50">
-                                        <tr>
-                                            <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.Nombre)">NOMBRE COMPLETO @IconoOrden(EgresadosOrdenCampo.Nombre)</button></th>
-                                            <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.FechaEgreso)">GENERACIÓN / AÑO DE TITULACIÓN @IconoOrden(EgresadosOrdenCampo.FechaEgreso)</button></th>
-                                            <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.SituacionLaboral)">SITUACIÓN LABORAL ACTUAL @IconoOrden(EgresadosOrdenCampo.SituacionLaboral)</button></th>
-                                            <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500"><button @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.FechaUltimaActualizacion)">FECHA DE ÚLTIMA ACTUALIZACIÓN @IconoOrden(EgresadosOrdenCampo.FechaUltimaActualizacion)</button></th>
-                                            <th class="px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500">ACCIÓN</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="divide-y divide-gray-100">
-                                        @foreach (var egresado in resultadosPagina)
-                                        {
-                                            <tr @key="egresado.IdEgresado" class="hover:bg-gray-50">
-                                                <td class="whitespace-nowrap px-5 py-4"><div class="font-semibold text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div></td>
-                                                <td class="px-5 py-4 text-sm text-gray-700">@(egresado.FechaEgreso?.ToString() ?? "Sin registro")</td>
-                                                <td class="px-5 py-4 text-sm text-gray-700">@(egresado.SituacionLaboral ?? "Sin registro")</td>
-                                                <td class="whitespace-nowrap px-5 py-4 text-sm text-gray-700">@egresado.FechaUltimaActualizacion.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture)</td>
-                                                <td class="px-5 py-4"><a href="@($"responsable/egresados/{egresado.IdEgresado}")" class="text-sm font-semibold text-[#003366] hover:underline">Ver perfil &gt;</a></td>
-                                            </tr>
-                                        }
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="flex flex-col gap-4 border-t border-gray-200 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
-                                <span>@PrimerResultado-@UltimoResultado de @totalResultados resultados</span>
-                                <div class="flex items-center gap-4">
-                                    <label>Registros por página <select @bind="filtros.RegistrosPorPagina" @bind:after="CambiarRegistrosPorPaginaAsync" class="ml-2 rounded border border-gray-300 px-2 py-1"><option value="10">10</option><option value="20">20</option><option value="50">50</option></select></label>
-                                    <div class="flex items-center gap-2"><button @onclick="PaginaAnteriorAsync" disabled="@(filtros.Pagina == 1 || buscando)" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-40">&lt;</button><span>@filtros.Pagina / @TotalPaginas</span><button @onclick="PaginaSiguienteAsync" disabled="@(filtros.Pagina >= TotalPaginas || buscando)" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-40">&gt;</button></div>
+                                <div class="rounded-xl border border-gray-200 bg-gray-100 px-6 py-16 text-center">
+                                    <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-white text-gray-400">
+                                        <svg class="h-9 w-9" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7" d="m21 21-4.35-4.35m2.35-5.65a8 8 0 1 1-16 0 8 8 0 0 1 16 0Zm-5.5-2.5 3 3m0-3-3 3" /></svg>
+                                    </div>
+                                    <h2 class="mt-5 text-lg font-bold text-gray-900">No se encontraron egresados que coincidan con los criterios seleccionados</h2>
+                                    <p class="mx-auto mt-2 max-w-xl text-sm text-gray-500">Revisa los criterios de búsqueda o limpia los filtros para volver a mostrar los egresados de @SiglasPrograma.</p>
+                                    <button type="button" @onclick="LimpiarTodosLosFiltrosAsync" class="mt-6 rounded-lg bg-[#003366] px-5 py-3 text-sm font-semibold text-white hover:bg-[#002244]">Limpiar todos los filtros</button>
+                                    <p class="mt-3 text-xs text-gray-500">Se mostrarán todos los egresados de tu programa autorizado.</p>
                                 </div>
-                            </div>
-                        </div>
+                            }
+                            else
+                            {
+                                <div class="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+                                    <div>
+                                        <h2 class="text-xl font-bold text-gray-900">Mostrando @totalResultados resultados</h2>
+                                        <p class="mt-1 text-sm text-gray-500">
+                                            @(FiltrosActivos.Count == 0 ? "Todos los egresados" : "Resultados según los criterios seleccionados") • Todos los perfiles pertenecen a @SiglasPrograma.
+                                        </p>
+                                    </div>
+                                    <p class="text-xs text-gray-500 @(buscando ? "visible" : "invisible")" role="status">
+                                        Actualizando resultados...
+                                    </p>
+                                </div>
+
+                                <div class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                                    <div class="overflow-x-auto">
+                                        <table class="w-full min-w-[900px] table-fixed divide-y divide-gray-200">
+                                            <thead class="bg-gray-50">
+                                                <tr>
+                                                    <th class="w-[27%] px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                                                        <button type="button" @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.Nombre)"
+                                                                class="inline-flex w-full items-center justify-between gap-2 text-left hover:text-gray-700">
+                                                            <span class="truncate">NOMBRE COMPLETO</span>
+                                                            <span class="inline-block w-4 shrink-0 text-center">@IconoOrden(EgresadosOrdenCampo.Nombre)</span>
+                                                        </button>
+                                                    </th>
+                                                    <th class="w-[18%] px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                                                        <button type="button" @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.FechaEgreso)"
+                                                                class="inline-flex w-full items-center justify-between gap-2 text-left hover:text-gray-700">
+                                                            <span>GENERACIÓN / AÑO DE EGRESO</span>
+                                                            <span class="inline-block w-4 shrink-0 text-center">@IconoOrden(EgresadosOrdenCampo.FechaEgreso)</span>
+                                                        </button>
+                                                    </th>
+                                                    <th class="w-[25%] px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                                                        <button type="button" @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.SituacionLaboral)"
+                                                                class="inline-flex w-full items-center justify-between gap-2 text-left hover:text-gray-700">
+                                                            <span>SITUACIÓN LABORAL ACTUAL</span>
+                                                            <span class="inline-block w-4 shrink-0 text-center">@IconoOrden(EgresadosOrdenCampo.SituacionLaboral)</span>
+                                                        </button>
+                                                    </th>
+                                                    <th class="w-[19%] px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                                                        <button type="button" @onclick="() => OrdenarPorAsync(EgresadosOrdenCampo.FechaUltimaActualizacion)"
+                                                                class="inline-flex w-full items-center justify-between gap-2 text-left hover:text-gray-700">
+                                                            <span>FECHA DE ÚLTIMA ACTUALIZACIÓN</span>
+                                                            <span class="inline-block w-4 shrink-0 text-center">@IconoOrden(EgresadosOrdenCampo.FechaUltimaActualizacion)</span>
+                                                        </button>
+                                                    </th>
+                                                    <th class="w-[11%] px-5 py-4 text-left text-xs font-bold tracking-wider text-gray-500">
+                                                        ACCIÓN
+                                                    </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-100">
+                                                @foreach (var egresado in resultadosPagina)
+                                                {
+                                                    <tr @key="egresado.IdEgresado" class="hover:bg-gray-50">
+                                                        <td class="px-5 py-4 break-words">
+                                                            <div class="font-semibold text-gray-900">@egresado.Nombres @egresado.ApellidoPaterno @egresado.ApellidoMaterno</div>
+                                                        </td>
+                                                        <td class="px-5 py-4 text-sm text-gray-700 break-words">
+                                                            @(egresado.FechaEgreso?.ToString() ?? "Sin registro")
+                                                        </td>
+                                                        <td class="px-5 py-4 text-sm text-gray-700 break-words">
+                                                            @(egresado.SituacionLaboral ?? "Sin registro")
+                                                        </td>
+                                                        <td class="px-5 py-4 text-sm text-gray-700 whitespace-nowrap">
+                                                            @egresado.FechaUltimaActualizacion.ToLocalTime().ToString("dd MMM yyyy", CultureInfo.CurrentCulture)
+                                                        </td>
+                                                        <td class="px-5 py-4 whitespace-nowrap">
+                                                            <a href="@($"responsable/egresados/{egresado.IdEgresado}")" class="text-sm font-semibold text-[#003366] hover:underline">Ver perfil &gt;</a>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="flex flex-col gap-4 border-t border-gray-200 px-5 py-4 text-sm text-gray-600 sm:flex-row sm:items-center sm:justify-between">
+                                        <span>@PrimerResultado-@UltimoResultado de @totalResultados resultados</span>
+                                        <div class="flex items-center gap-4">
+                                            <label>
+                                                Registros por página
+                                                <select @bind="filtros.RegistrosPorPagina" @bind:after="CambiarRegistrosPorPaginaAsync" class="ml-2 rounded border border-gray-300 px-2 py-1">
+                                                    <option value="10">10</option>
+                                                    <option value="20">20</option>
+                                                    <option value="50">50</option>
+                                                </select>
+                                            </label>
+                                            <div class="flex items-center gap-2">
+                                                <button @onclick="PaginaAnteriorAsync" disabled="@(filtros.Pagina == 1 || buscando)" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-40">&lt;</button>
+                                                <span>@filtros.Pagina / @TotalPaginas</span>
+                                                <button @onclick="PaginaSiguienteAsync" disabled="@(filtros.Pagina >= TotalPaginas || buscando)" class="rounded border border-gray-300 px-3 py-1 disabled:opacity-40">&gt;</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </section>
                     }
                 </section>
             }
