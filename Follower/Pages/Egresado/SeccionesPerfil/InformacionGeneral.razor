@@ -25,7 +25,7 @@ else
             <div class="flex items-center space-x-6 mb-6">
                 <!-- INICIALES, CAMBIAR PROXIMAMENTE-->
                 <div class="h-20 w-20 rounded-full bg-gray-100 flex items-center justify-center border border-gray-300 text-2xl font-bold text-gray-400">
-                    SM  
+                    @ObtenerIniciales(egresado.Nombres, egresado.ApellidoPaterno)
                 </div>
                 <div class="flex flex-col space-y-2">
                     <div class="flex space-x-3">
@@ -199,6 +199,13 @@ else
         }
         cargando = false; 
 
+    }
+
+    private static string ObtenerIniciales(string? nombres, string? apellidoPaterno)
+    {
+        var n = string.IsNullOrWhiteSpace(nombres) ? "" : nombres.Trim()[0].ToString().ToUpper();
+        var a = string.IsNullOrWhiteSpace(apellidoPaterno) ? "" : apellidoPaterno.Trim()[0].ToString().ToUpper();
+        return string.IsNullOrEmpty(n + a) ? "EG" : n + a;
     }
 
     private async Task GuardarPerfil()

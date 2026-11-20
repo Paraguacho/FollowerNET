@@ -105,8 +105,101 @@ namespace Follower.Data
                 .OnDelete(DeleteBehavior.Cascade);
         
         }
-   
 
-    
+        public override int SaveChanges()
+        {
+            ActualizarFechaModificacionEgresados();
+            return base.SaveChanges();
+        }
+
+        public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+        {
+            await ActualizarFechaModificacionEgresadosAsync(cancellationToken);
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        private void ActualizarFechaModificacionEgresados()
+        {
+            var ahora = DateTime.UtcNow;
+            var idsPendientes = RecolectarIdsEgresadosModificados(ahora);
+
+            if (idsPendientes.Count == 0) return;
+
+            var egresados = Egresados.Where(e => idsPendientes.Contains(e.IdEgresado)).ToList();
+            foreach (var egresado in egresados)
+            {
+                egresado.FechaUltimaActualizacion = ahora;
             }
+        }
+
+        private async Task ActualizarFechaModificacionEgresadosAsync(CancellationToken cancellationToken)
+        {
+            var ahora = DateTime.UtcNow;
+            var idsPendientes = RecolectarIdsEgresadosModificados(ahora);
+
+            if (idsPendientes.Count == 0) return;
+
+            var egresados = await Egresados
+                .Where(e => idsPendientes.Contains(e.IdEgresado))
+                .ToListAsync(cancellationToken);
+
+            foreach (var egresado in egresados)
+            {
+                egresado.FechaUltimaActualizacion = ahora;
+            }
+        }
+
+        private HashSet<int> RecolectarIdsEgresadosModificados(DateTime ahora)
+        {
+            var idsAfectados = new HashSet<int>();
+            var entradas = ChangeTracker.Entries()
+                .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
+                .ToList();
+
+            foreach (var entry in entradas)
+            {
+                // 1. Si se modificó directamente el Egresado
+                if (entry.Entity is Egresado egresado && entry.State != EntityState.Deleted)
+                {
+                    egresado.FechaUltimaActualizacion = ahora;
+                    continue;
+                }
+
+                // 2. Si se agregó, editó o eliminó cualquier entidad hija relacionada
+                int? idEgresado = entry.Entity switch
+                {
+                    PerfilAcademico x => x.EgresadoId,
+                    SituacionLaboral x => x.EgresadoId,
+                    ExperienciaLaboral x => x.EgresadoId,
+                    FormacionAcademica x => x.EgresadoId,
+                    ProductividadCientifica x => x.EgresadoId,
+                    ProyectoInvestigacion x => x.EgresadoId,
+                    ReconocimientoAcademico x => x.EgresadoId,
+                    ContribucionSocial x => x.EgresadoId,
+                    ResumenProductividad x => x.EgresadoId,
+                    ValorCampoEgresado x => x.IdEgresado,
+                    _ => null
+                };
+
+                if (idEgresado is > 0)
+                {
+                    idsAfectados.Add(idEgresado.Value);
+                }
+            }
+
+            // Si algún Egresado ya está siendo rastreado en memoria, actualízalo directo sin consultar la BD
+            foreach (var entry in ChangeTracker.Entries<Egresado>())
+            {
+                if (idsAfectados.Remove(entry.Entity.IdEgresado) && entry.State != EntityState.Deleted)
+                {
+                    entry.Entity.FechaUltimaActualizacion = ahora;
+                }
+            }
+
+            return idsAfectados;
+        }
+
+
+
+    }
 }
