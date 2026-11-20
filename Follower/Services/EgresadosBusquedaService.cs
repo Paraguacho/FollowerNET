@@ -214,6 +214,8 @@ namespace Follower.Services
                 query = query.Where(e => e.FechaUltimaActualizacion < fechaLimite);
             }
 
+
+
             // 3. Conteo Total
             var total = await query.CountAsync(cancellationToken);
 
@@ -226,16 +228,26 @@ namespace Follower.Services
             query = filtrosNormalizados.OrdenarPor switch
             {
                 EgresadosOrdenCampo.Nombre => filtrosNormalizados.OrdenAscendente
-                    ? query.OrderBy(e => e.Nombres).ThenBy(e => e.ApellidoPaterno)
-                    : query.OrderByDescending(e => e.Nombres).ThenByDescending(e => e.ApellidoPaterno),
+                    ? query.OrderBy(e => e.Nombres).ThenBy(e => e.ApellidoPaterno).ThenBy(e => e.IdEgresado)
+                    : query.OrderByDescending(e => e.Nombres).ThenByDescending(e => e.ApellidoPaterno).ThenBy(e => e.IdEgresado),
 
                 EgresadosOrdenCampo.FechaEgreso => filtrosNormalizados.OrdenAscendente
-                    ? query.OrderBy(e => e.FechaEgreso)
-                    : query.OrderByDescending(e => e.FechaEgreso),
+                    ? query.OrderBy(e => e.FechaEgreso == null ? 1 : 0).ThenBy(e => e.FechaEgreso).ThenBy(e => e.IdEgresado)
+                    : query.OrderBy(e => e.FechaEgreso == null ? 1 : 0).ThenByDescending(e => e.FechaEgreso).ThenBy(e => e.IdEgresado),
+
+                EgresadosOrdenCampo.SituacionLaboral => filtrosNormalizados.OrdenAscendente
+                    ? query.OrderBy(e => e.SituacionLaboral == null || string.IsNullOrEmpty(e.SituacionLaboral.EstadoActual) ? 1 : 0)
+                           .ThenBy(e => e.SituacionLaboral != null ? e.SituacionLaboral.EstadoActual : "")
+                           .ThenBy(e => e.ApellidoPaterno)
+                           .ThenBy(e => e.IdEgresado)
+                    : query.OrderBy(e => e.SituacionLaboral == null || string.IsNullOrEmpty(e.SituacionLaboral.EstadoActual) ? 1 : 0)
+                           .ThenByDescending(e => e.SituacionLaboral != null ? e.SituacionLaboral.EstadoActual : "")
+                           .ThenBy(e => e.ApellidoPaterno)
+                           .ThenBy(e => e.IdEgresado),
 
                 EgresadosOrdenCampo.FechaUltimaActualizacion => filtrosNormalizados.OrdenAscendente
-                    ? query.OrderBy(e => e.FechaUltimaActualizacion)
-                    : query.OrderByDescending(e => e.FechaUltimaActualizacion),
+                    ? query.OrderBy(e => e.FechaUltimaActualizacion).ThenBy(e => e.IdEgresado)
+                    : query.OrderByDescending(e => e.FechaUltimaActualizacion).ThenBy(e => e.IdEgresado),
 
                 _ => query.OrderBy(e => e.IdEgresado)
             };
@@ -291,7 +303,7 @@ namespace Follower.Services
                 {
                     pr.IdPrograma,
                     pr.ProgramaEducativo.Siglas,
-                    pr.ProgramaEducativo.NombrePrograma // <-- Agregado aquí
+                    pr.ProgramaEducativo.NombrePrograma
                 })
                 .AsNoTracking()
                 .ToListAsync(cancellationToken);
