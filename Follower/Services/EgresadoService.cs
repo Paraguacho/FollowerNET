@@ -6,17 +6,18 @@ namespace Follower.Services
 {
     public class EgresadoService : IEgresadoService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public EgresadoService(ApplicationDbContext context)
+        public EgresadoService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<Egresado?> ObtenerPorUsuarioIdAsync(int idUsuario)
-
         {
-            var egresado = await _context.Egresados
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var egresado = await context.Egresados
                 .Include(e => e.PerfilAcademico)
                 .Include(e => e.SituacionLaboral)
                 .Include(e => e.ExperienciasLaborales)
@@ -27,7 +28,9 @@ namespace Follower.Services
                 .Include(e => e.ReconocimientosAcademicos)
                 .Include(e => e.ProyectosInvestigacion)
                 .Include(e => e.ContribucionesSociales)
-                .FirstOrDefaultAsync(e=> e.IdUsuario == idUsuario);
+                .AsSplitQuery()
+                .AsNoTracking()
+                .FirstOrDefaultAsync(e => e.IdUsuario == idUsuario);
 
             if (egresado != null)
             {
@@ -48,85 +51,112 @@ namespace Follower.Services
             return egresado;
         }
 
-        public async Task EliminarExperienciaLaboralAsync (ExperienciaLaboral experiencia)
+        public Task EliminarExperienciaLaboralAsync(ExperienciaLaboral experiencia)
+            => EliminarEntidadAsync(experiencia);
+
+        public Task EliminarFormacionAcademicaAsync(FormacionAcademica formacion)
+            => EliminarEntidadAsync(formacion);
+
+        public async Task EliminarProductividadCientificaAsync(ProductividadCientifica productividad)
         {
-            _context.ExperienciasLaborales.Remove(experiencia);
-            await _context.SaveChangesAsync();
-        }
-        public async Task EliminarFormacionAcademicaAsync (FormacionAcademica formacion)
-        {
-            _context.FormacionesAcademicas.Remove(formacion);
-            await _context.SaveChangesAsync();
+            try
+            {
+                await using var context = await _contextFactory.CreateDbContextAsync();
+                var entry = context.Entry(productividad);
+                if (!entry.IsKeySet) return;
+
+                if (productividad.Coautores != null)
+                {
+                    foreach (var coautor in productividad.Coautores)
+                    {
+                        var coautorEntry = context.Entry(coautor);
+                        if (coautorEntry.IsKeySet)
+                        {
+                            coautorEntry.State = EntityState.Deleted;
+                        }
+                    }
+                }
+
+                entry.State = EntityState.Deleted;
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // El registro ya había sido eliminado (por ejemplo, doble clic rápido)
+            }
         }
 
-        public async Task EliminarProductividadCientificaAsync (ProductividadCientifica productividad)
-        {
-            _context.ProductividadesCientificas.Remove(productividad);
-            await _context.SaveChangesAsync();
-        }
+        public Task EliminarCoautorAsync(CoautorProducto coautor)
+            => EliminarEntidadAsync(coautor);
 
-        public async Task EliminarCoautorAsync(CoautorProducto coautor)
-        {
-            _context.CoautoresProductos.Remove(coautor);
-            await _context.SaveChangesAsync();
-        }
-        public async Task EliminarProyectoInvestigacionAsync(ProyectoInvestigacion proyecto)
-        {
-            _context.ProyectosInvestigacion.Remove(proyecto);
-            await _context.SaveChangesAsync();
-        }
+        public Task EliminarProyectoInvestigacionAsync(ProyectoInvestigacion proyecto)
+            => EliminarEntidadAsync(proyecto);
 
-        public async Task EliminarReconocimientoAcademicoAsync(ReconocimientoAcademico reconocimiento)
-        {
-            _context.ReconocimientosAcademicos.Remove(reconocimiento);
-            await _context.SaveChangesAsync();
-        }
+        public Task EliminarReconocimientoAcademicoAsync(ReconocimientoAcademico reconocimiento)
+            => EliminarEntidadAsync(reconocimiento);
 
-        public async Task EliminarContribucionSocialAsync(ContribucionSocial contribucion)
-        {
-            _context.ContribucionesSociales.Remove(contribucion);
-            await _context.SaveChangesAsync();
-        }
+        public Task EliminarContribucionSocialAsync(ContribucionSocial contribucion)
+            => EliminarEntidadAsync(contribucion);
 
+        private async Task EliminarEntidadAsync<TEntity>(TEntity entidad) where TEntity : class
+        {
+            try
+            {
+                await using var context = await _contextFactory.CreateDbContextAsync();
+                var entry = context.Entry(entidad);
+                if (!entry.IsKeySet) return;
+
+                entry.State = EntityState.Deleted;
+                await context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                // El registro ya había sido eliminado
+            }
+        }
 
         public async Task ActualizarAsync(Egresado egresado)
         {
             try
             {
+                await using var context = await _contextFactory.CreateDbContextAsync();
+
                 if (egresado.PerfilAcademico != null)
                 {
                     egresado.PerfilAcademico.EgresadoId = egresado.IdEgresado;
-                    if (egresado.PerfilAcademico.Id == 0)
-                    {
-                        _context.Entry(egresado.PerfilAcademico).State = EntityState.Added;
-                    }
-                    else
-                    {
-                        _context.Entry(egresado.PerfilAcademico).State = EntityState.Modified;
-                    }
                 }
 
                 if (egresado.SituacionLaboral != null)
                 {
                     egresado.SituacionLaboral.EgresadoId = egresado.IdEgresado;
-
-                    if (egresado.SituacionLaboral.IdSituacionLaboral == 0)
-                        _context.Entry(egresado.SituacionLaboral).State = EntityState.Added;
-                    else
-                        _context.Entry(egresado.SituacionLaboral).State = EntityState.Modified;
                 }
 
                 if (egresado.ResumenProductividad != null)
                 {
                     egresado.ResumenProductividad.EgresadoId = egresado.IdEgresado;
-                    if (egresado.ResumenProductividad.IdResumen == 0)
-                        _context.Entry(egresado.ResumenProductividad).State = EntityState.Added;
-                    else
-                        _context.Entry(egresado.ResumenProductividad).State = EntityState.Modified;
                 }
 
-                _context.Egresados.Update(egresado);
-                await _context.SaveChangesAsync();
+                context.Egresados.Update(egresado);
+
+                if (egresado.PerfilAcademico != null)
+                {
+                    context.Entry(egresado.PerfilAcademico).State =
+                        egresado.PerfilAcademico.Id == 0 ? EntityState.Added : EntityState.Modified;
+                }
+
+                if (egresado.SituacionLaboral != null)
+                {
+                    context.Entry(egresado.SituacionLaboral).State =
+                        egresado.SituacionLaboral.IdSituacionLaboral == 0 ? EntityState.Added : EntityState.Modified;
+                }
+
+                if (egresado.ResumenProductividad != null)
+                {
+                    context.Entry(egresado.ResumenProductividad).State =
+                        egresado.ResumenProductividad.IdResumen == 0 ? EntityState.Added : EntityState.Modified;
+                }
+
+                await context.SaveChangesAsync();
             }
             catch (Exception ex)
             {

@@ -7,16 +7,17 @@ namespace Follower.Services
 {
     public class RegistroEgresadoService : IRegistroEgresadoService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public RegistroEgresadoService(ApplicationDbContext context)
+        public RegistroEgresadoService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<List<ProgramaEducativo>> ObtenerProgramasDisponiblesAsync()
         {
-            return await _context.ProgramasEducativos.AsNoTracking().ToListAsync();
+            await using var context = await _contextFactory.CreateDbContextAsync();
+            return await context.ProgramasEducativos.AsNoTracking().ToListAsync();
         }
 
         public async Task<RegistroResultadoDto> RegistrarEgresadoAsync(RegistroEgresadoDto modelo)
@@ -25,61 +26,71 @@ namespace Follower.Services
 
             try
             {
-                var existeUsuario = await _context.Usuarios.AnyAsync(u => u.Correo == modelo.Correo);
+                await using var context = await _contextFactory.CreateDbContextAsync();
+
+                var existeUsuario = await context.Usuarios
+                    .AsNoTracking()
+                    .AnyAsync(u => u.Correo == modelo.Correo);
+
                 if (existeUsuario)
                 {
                     resultado.MensajeError = "Este correo electrónico ya se encuentra registrado.";
                     return resultado;
                 }
 
-                using var transaction = await _context.Database.BeginTransactionAsync();
-                try
+                var strategy = context.Database.CreateExecutionStrategy();
+
+                await strategy.ExecuteAsync(async () =>
                 {
-                    // BCrypt.Net.BCrypt.HashPassword(modelo.Contrasena)
-                    var nuevoUsuario = new Usuario
+                    await using var transaction = await context.Database.BeginTransactionAsync();
+                    try
                     {
-                        Correo = modelo.Correo,
-                        ContrasenaHash = modelo.Contrasena,
-                        IdRol = 2 // Rol Egresado
-                    };
+                        // BCrypt.Net.BCrypt.HashPassword(modelo.Contrasena)
+                        var nuevoUsuario = new Usuario
+                        {
+                            Correo = modelo.Correo,
+                            ContrasenaHash = modelo.Contrasena,
+                            IdRol = 2 // Rol Egresado
+                        };
 
-                    _context.Usuarios.Add(nuevoUsuario);
-                    await _context.SaveChangesAsync();
+                        context.Usuarios.Add(nuevoUsuario);
+                        await context.SaveChangesAsync();
 
-                    var nuevoEgresado = new Egresado
+                        var nuevoEgresado = new Egresado
+                        {
+                            IdUsuario = nuevoUsuario.IdUsuario,
+                            IdPrograma = modelo.IdPrograma,
+                            Nombres = modelo.Nombres,
+                            ApellidoPaterno = modelo.ApellidoPaterno,
+                            ApellidoMaterno = modelo.ApellidoMaterno,
+                            FechaEgreso = modelo.AnoEgreso,
+                            EstadoSolicitud = "Pendiente",
+                            PrivacidadPerfil = "Privado",
+                            FechaSolicitud = DateTime.UtcNow,
+                            FechaAceptacionPrivacidad = DateTime.UtcNow,
+                            FechaUltimaActualizacion = DateTime.UtcNow
+                        };
+
+                        context.Egresados.Add(nuevoEgresado);
+                        await context.SaveChangesAsync();
+
+                        await transaction.CommitAsync();
+                    }
+                    catch
                     {
-                        IdUsuario = nuevoUsuario.IdUsuario,
-                        IdPrograma = modelo.IdPrograma,
-                        Nombres = modelo.Nombres,
-                        ApellidoPaterno = modelo.ApellidoPaterno,
-                        ApellidoMaterno = modelo.ApellidoMaterno,
-                        FechaEgreso = modelo.AnoEgreso,
-                        EstadoSolicitud = "Pendiente",
-                        PrivacidadPerfil = "Privado",
-                        FechaSolicitud = DateTime.UtcNow,
-                        FechaAceptacionPrivacidad = DateTime.UtcNow,
-                        FechaUltimaActualizacion = DateTime.UtcNow
-                    };
+                        await transaction.RollbackAsync();
+                        context.ChangeTracker.Clear();
+                        throw;
+                    }
+                });
 
-                    _context.Egresados.Add(nuevoEgresado);
-                    await _context.SaveChangesAsync();
-
-                    await transaction.CommitAsync();
-
-                    resultado.Exito = true;
-                    return resultado;
-                }
-                catch (Exception)
-                {
-                    await transaction.RollbackAsync();
-                    resultado.MensajeError = "Ocurrió un error al procesar tu registro. Inténtalo de nuevo.";
-                    return resultado;
-                }
+                resultado.Exito = true;
+                return resultado;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error de conexión: {ex.Message}");
-                resultado.MensajeError = "Error de conexión con la base de datos.";
+                Console.WriteLine($"Error en RegistroEgresadoService: {ex.Message}");
+                resultado.MensajeError = "Ocurrió un error al procesar tu registro. Verifica tu conexión e inténtalo de nuevo.";
                 return resultado;
             }
         }

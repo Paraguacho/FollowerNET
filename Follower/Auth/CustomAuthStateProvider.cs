@@ -81,11 +81,16 @@ namespace Follower.Auth
 
         public async Task CerrarSesion()
         {
-            await _sessionStorage.DeleteAsync("userId");
-            await _sessionStorage.DeleteAsync("userRole");
-            await _sessionStorage.DeleteAsync("loginTimestamp");
-            await _sessionStorage.DeleteAsync("userName");
-            //NotifyAuthenticationStateChanged(Task.FromResult(new AuthenticationState(_anonymous)));
+            try
+            {
+                await _sessionStorage.DeleteAsync("userId");
+                await _sessionStorage.DeleteAsync("userRole");
+                await _sessionStorage.DeleteAsync("loginTimestamp");
+                await _sessionStorage.DeleteAsync("userName");
+            }
+            catch
+            {
+            }
         }
     }
 }

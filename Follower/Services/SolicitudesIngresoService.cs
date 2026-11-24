@@ -6,18 +6,20 @@ namespace Follower.Services
 {
     public class SolicitudesIngresoService : ISolicitudesIngresoService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public SolicitudesIngresoService(ApplicationDbContext context)
+        public SolicitudesIngresoService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<ProgramaEducativo?> ObtenerProgramaAsignadoAsync(int idResponsable)
         {
-            var asignacion = await _context.ProgramasResponsables
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var asignacion = await context.ProgramasResponsables
                 .Include(pr => pr.ProgramaEducativo)
-                .AsNoTracking() 
+                .AsNoTracking()
                 .FirstOrDefaultAsync(pr => pr.IdUsuario == idResponsable);
 
             return asignacion?.ProgramaEducativo;
@@ -25,31 +27,37 @@ namespace Follower.Services
 
         public async Task<List<Egresado>> ObtenerSolicitudesPendientesAsync(int idPrograma)
         {
-            return await _context.Egresados
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            return await context.Egresados
                 .Include(e => e.Usuario)
                 .Include(e => e.ProgramaEducativo)
                 .Where(e => e.EstadoSolicitud == "Pendiente" && e.IdPrograma == idPrograma)
                 .OrderBy(e => e.FechaSolicitud)
-                .AsNoTracking() 
+                .AsNoTracking()
                 .ToListAsync();
         }
 
         public async Task<bool> AprobarSolicitudAsync(int idEgresado, int idResponsable)
         {
-            var egresado = await _context.Egresados.FindAsync(idEgresado);
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var egresado = await context.Egresados.FindAsync(idEgresado);
             if (egresado == null) return false;
 
             egresado.EstadoSolicitud = "Aprobado";
             egresado.IdUsuarioResolvio = idResponsable;
             egresado.FechaResolucion = DateTime.Now;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         public async Task<bool> RechazarSolicitudAsync(int idEgresado, int idResponsable, string? motivoRechazo)
         {
-            var egresado = await _context.Egresados.FindAsync(idEgresado);
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var egresado = await context.Egresados.FindAsync(idEgresado);
             if (egresado == null) return false;
 
             egresado.EstadoSolicitud = "Rechazado";
@@ -57,7 +65,7 @@ namespace Follower.Services
             egresado.FechaResolucion = DateTime.Now;
             egresado.MotivoRechazo = string.IsNullOrEmpty(motivoRechazo) ? null : motivoRechazo;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
     }

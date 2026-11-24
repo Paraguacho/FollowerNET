@@ -6,11 +6,11 @@ namespace Follower.Services
 {
     public class AutenticacionService : IAutenticacionService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public AutenticacionService(ApplicationDbContext context)
+        public AutenticacionService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<AutenticacionResultadoDto> ValidarLoginAsync(LoginDto modelo)
@@ -19,13 +19,15 @@ namespace Follower.Services
 
             try
             {
-                var usuario = await _context.Usuarios
+                await using var context = await _contextFactory.CreateDbContextAsync();
+
+                var usuario = await context.Usuarios
                     .Include(u => u.Rol)
                     .Include(u => u.Egresado)
                     .AsNoTracking()
                     .FirstOrDefaultAsync(u => u.Correo == modelo.Correo);
 
-                // Validacin 
+                // Validación
                 // !BCrypt.Net.BCrypt.Verify(modelo.Contrasena, usuario.ContrasenaHash)
                 if (usuario == null || usuario.ContrasenaHash != modelo.Contrasena)
                 {

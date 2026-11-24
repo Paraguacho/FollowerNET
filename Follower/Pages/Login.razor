@@ -1,14 +1,10 @@
 ﻿@page "/login"
 @layout MainLayout
-@inject Follower.Services.IAutenticacionService AutenticacionService;
-
+@inject Follower.Services.IAutenticacionService AutenticacionService
 @inject NavigationManager NavManager
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AuthenticationStateProvider authStateProvider
-@inject NavigationManager Navigation
 @using Follower.Auth
-
-@using Microsoft.EntityFrameworkCore
 
 <div class="min-h-screen bg-gray-50 flex-column flex-col">
     <main class="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
@@ -33,6 +29,7 @@
                         </div>
                     </div>
                 }
+
                 <EditForm Model="@modelo" OnValidSubmit="ProcesarLogin">
                     <DataAnnotationsValidator />
 
@@ -60,8 +57,9 @@
                         <!-- Botón Ingresar -->
                         <div class="pt-2">
                             <button type="submit"
-                                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#003366] hover:bg-[#002244] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] transition-colors">
-                                Ingresar a mi cuenta
+                                    disabled="@enviando"
+                                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-[#003366] hover:bg-[#002244] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#003366] transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                @(enviando ? "Ingresando..." : "Ingresar a mi cuenta")
                             </button>
                         </div>
 
@@ -74,68 +72,71 @@
                         </div>
                     </div>
                 </EditForm>
-            
-            
+
             </div>
         </div>
-     </main>
-
-
-
-
-
-
-
-
-
-
+    </main>
 </div>
 
 @code {
     private Follower.DTOs.LoginDto modelo = new Follower.DTOs.LoginDto();
     private string? mensajeError = null;
+    private bool enviando = false;
 
     protected override async Task OnInitializedAsync()
     {
         var authState = await authStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity is { IsAuthenticated: true })
         {
-            Navigation.NavigateTo("./", forceLoad: false);
+            NavManager.NavigateTo("./", forceLoad: false);
+            return;
         }
     }
-
 
     private async Task ProcesarLogin()
     {
-        var resultado = await AutenticacionService.ValidarLoginAsync(modelo);
+        if (enviando) return;
 
-        if (!resultado.Exito)
+        enviando = true;
+        mensajeError = null;
+
+        try
         {
-            mensajeError = resultado.MensajeError;
-            return;
+            var resultado = await AutenticacionService.ValidarLoginAsync(modelo);
+
+            if (!resultado.Exito)
+            {
+                mensajeError = resultado.MensajeError;
+                return;
+            }
+
+            var customAuthStateProvider = (CustomAuthStateProvider)authStateProvider;
+
+            await customAuthStateProvider.IniciarSesion(
+                resultado.IdUsuario.ToString(),
+                resultado.Rol,
+                resultado.NombreCompleto!
+            );
+
+            Console.WriteLine($"Usuario logueado: ID {resultado.IdUsuario} con rol: {resultado.Rol}");
+
+            if (resultado.Rol == "ResponsablePrograma")
+            {
+                NavManager.NavigateTo("responsable/solicitudes");
+            }
+            else
+            {
+                NavManager.NavigateTo("./");
+            }
         }
-        
-        var customAuthStateProvider = (CustomAuthStateProvider)authStateProvider;
-
-        await customAuthStateProvider.IniciarSesion(
-                    resultado.IdUsuario.ToString(),
-                    resultado.Rol,
-                    resultado.NombreCompleto!
-                );
-
-
-        Console.WriteLine($"Usuario logueado: ID {resultado.IdUsuario} con rol: {resultado.Rol}");
-
-        if (resultado.Rol == "ResponsablePrograma")
+        catch (Exception ex)
         {
-            NavManager.NavigateTo("responsable/solicitudes");
+            Console.WriteLine($"Error inesperado en ProcesarLogin: {ex.Message}");
+            mensajeError = "Ocurrió un error inesperado al iniciar sesión.";
         }
-        else
+        finally
         {
-            NavManager.NavigateTo("./");
+            enviando = false;
         }
-           
-           
     }
-
 }

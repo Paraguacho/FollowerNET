@@ -11,7 +11,6 @@ namespace Follower.Services
     {
         private static readonly string[] SectoresDisponibles = { "Público", "Privado", "Educativo" };
         private static readonly string[] NivelesDisponibles = { "Maestría", "Doctorado", "Diplomado", "Especialidad" };
-        private readonly IServiceScopeFactory _scopeFactory;
         private static readonly string[] SituacionesLaboralesDisponibles =
         {
             "Empleo de tiempo completo",
@@ -21,25 +20,15 @@ namespace Follower.Services
             "Estudiando exclusivamente"
         };
 
-        public EgresadosBusquedaService(
-            AuthenticationStateProvider authStateProvider,
-            ApplicationDbContext context,
-            IServiceScopeFactory scopeFactory)
-        {
-            _authStateProvider = authStateProvider;
-            _context = context;
-            _scopeFactory = scopeFactory;
-        }
-
         private readonly AuthenticationStateProvider _authStateProvider;
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
         public EgresadosBusquedaService(
             AuthenticationStateProvider authStateProvider,
-            ApplicationDbContext context)
+            IDbContextFactory<ApplicationDbContext> contextFactory)
         {
             _authStateProvider = authStateProvider;
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         public async Task<ProgramaAutorizadoDto?> ObtenerProgramaAsignadoAsync(CancellationToken cancellationToken = default)
@@ -56,10 +45,9 @@ namespace Follower.Services
                 if (!int.TryParse(claimUsuarioId, out var usuarioId))
                     return null;
 
-                using var scope = _scopeFactory.CreateScope();
-                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
 
-                return await dbContext.ProgramasResponsables
+                return await context.ProgramasResponsables
                     .Include(pr => pr.ProgramaEducativo)
                     .Where(pr => pr.IdUsuario == usuarioId)
                     .Select(pr => new ProgramaAutorizadoDto
@@ -82,9 +70,10 @@ namespace Follower.Services
         {
             var programa = await ObtenerProgramaAutorizadoAsync(cancellationToken);
 
-            // Consultamos directamente el DbSet SituacionesLaborales y filtramos cruzando con Egresados
-            var situacionesRegistradas = await _context.SituacionesLaborales
-                .Where(sl => _context.Egresados.Any(e => e.IdEgresado == sl.EgresadoId && e.IdPrograma == programa.IdPrograma && e.EstadoSolicitud == "Aprobado"))
+            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+            var situacionesRegistradas = await context.SituacionesLaborales
+                .Where(sl => context.Egresados.Any(e => e.IdEgresado == sl.EgresadoId && e.IdPrograma == programa.IdPrograma && e.EstadoSolicitud == "Aprobado"))
                 .Where(sl => sl.EstadoActual != null && sl.EstadoActual.Trim() != "")
                 .Select(sl => sl.EstadoActual)
                 .Distinct()
@@ -107,14 +96,16 @@ namespace Follower.Services
         }
 
         public async Task<Egresado?> ObtenerPerfilAutorizadoAsync(
-     int idEgresado,
-     CancellationToken cancellationToken = default)
+            int idEgresado,
+            CancellationToken cancellationToken = default)
         {
             if (idEgresado <= 0) return null;
 
             var programa = await ObtenerProgramaAutorizadoAsync(cancellationToken);
 
-            return await _context.Egresados
+            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+            return await context.Egresados
                 .Include(e => e.PerfilAcademico)
                 .Include(e => e.SituacionLaboral)
                 .Include(e => e.ExperienciasLaborales)
@@ -141,8 +132,10 @@ namespace Follower.Services
             var programa = await ObtenerProgramaAutorizadoAsync(cancellationToken);
             var filtrosNormalizados = NormalizarFiltros(filtros);
 
+            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
             // 1. Iniciar la consulta base
-            var query = _context.Egresados
+            var query = context.Egresados
                 .Where(e => e.IdPrograma == programa.IdPrograma && e.EstadoSolicitud == "Aprobado")
                 .AsNoTracking();
 
@@ -168,25 +161,25 @@ namespace Follower.Services
 
             if (!string.IsNullOrWhiteSpace(filtrosNormalizados.SituacionLaboral))
             {
-                query = query.Where(e => _context.SituacionesLaborales.Any(sl => sl.EgresadoId == e.IdEgresado && sl.EstadoActual == filtrosNormalizados.SituacionLaboral));
+                query = query.Where(e => context.SituacionesLaborales.Any(sl => sl.EgresadoId == e.IdEgresado && sl.EstadoActual == filtrosNormalizados.SituacionLaboral));
             }
 
             if (!string.IsNullOrWhiteSpace(filtrosNormalizados.Sector))
             {
-                query = query.Where(e => _context.ExperienciasLaborales.Any(el =>
+                query = query.Where(e => context.ExperienciasLaborales.Any(el =>
                     el.EgresadoId == e.IdEgresado && el.EsEmpleoActual && el.Sector == filtrosNormalizados.Sector));
             }
 
             if (!string.IsNullOrWhiteSpace(filtrosNormalizados.NivelEstudioActual))
             {
-                query = query.Where(e => _context.FormacionesAcademicas.Any(fa =>
+                query = query.Where(e => context.FormacionesAcademicas.Any(fa =>
                     fa.EgresadoId == e.IdEgresado && fa.EsFormacionActual && fa.Grado == filtrosNormalizados.NivelEstudioActual));
             }
 
             if (!string.IsNullOrWhiteSpace(filtrosNormalizados.InstitucionActual))
             {
                 var inst = filtrosNormalizados.InstitucionActual.ToLower();
-                query = query.Where(e => _context.ExperienciasLaborales.Any(el =>
+                query = query.Where(e => context.ExperienciasLaborales.Any(el =>
                     el.EgresadoId == e.IdEgresado && el.EsEmpleoActual && el.Institucion.ToLower().Contains(inst)));
             }
 
@@ -213,8 +206,6 @@ namespace Follower.Services
                 var fechaLimite = DateTime.UtcNow.AddMonths(-12);
                 query = query.Where(e => e.FechaUltimaActualizacion < fechaLimite);
             }
-
-
 
             // 3. Conteo Total
             var total = await query.CountAsync(cancellationToken);
@@ -263,7 +254,7 @@ namespace Follower.Services
                     ApellidoPaterno = e.ApellidoPaterno,
                     ApellidoMaterno = e.ApellidoMaterno,
                     FechaEgreso = e.FechaEgreso,
-                    SituacionLaboral = _context.SituacionesLaborales
+                    SituacionLaboral = context.SituacionesLaborales
                                         .Where(sl => sl.EgresadoId == e.IdEgresado)
                                         .Select(sl => sl.EstadoActual)
                                         .FirstOrDefault(),
@@ -296,7 +287,9 @@ namespace Follower.Services
                 throw new UnauthorizedAccessException("No se pudo identificar al responsable de programa.");
             }
 
-            var programas = await _context.ProgramasResponsables
+            await using var context = await _contextFactory.CreateDbContextAsync(cancellationToken);
+
+            var programas = await context.ProgramasResponsables
                 .Include(pr => pr.ProgramaEducativo)
                 .Where(pr => pr.IdUsuario == usuarioId)
                 .Select(pr => new
