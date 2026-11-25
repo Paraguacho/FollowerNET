@@ -165,6 +165,7 @@ namespace Follower.Services
                 {
                     Console.WriteLine($"DETALLE: {ex.InnerException.Message}");
                 }
+                throw;
             }
         }
     }

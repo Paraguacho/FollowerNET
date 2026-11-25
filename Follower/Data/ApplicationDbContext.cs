@@ -103,7 +103,65 @@ namespace Follower.Data
                 .WithMany(c => c.ValoresEgresados)
                 .HasForeignKey(v => v.IdCampo)
                 .OnDelete(DeleteBehavior.Cascade);
-        
+
+            modelBuilder.Entity<FormacionAcademica>(entity =>
+            {
+                entity.Property(e => e.NombrePrograma).IsRequired(false);
+                entity.Property(e => e.Grado).IsRequired(false);
+                entity.Property(e => e.Institucion).IsRequired(false);
+                entity.Property(e => e.Pais).IsRequired(false);
+                entity.Property(e => e.EstadoPrograma).IsRequired(false);
+                entity.Property(e => e.FechaInicio).IsRequired(false);
+            });
+
+            modelBuilder.Entity<ExperienciaLaboral>(entity =>
+            {
+                entity.Property(e => e.Institucion).IsRequired(false);
+                entity.Property(e => e.Puesto).IsRequired(false);
+                entity.Property(e => e.Sector).IsRequired(false);
+                entity.Property(e => e.FechaInicio).IsRequired(false);
+                entity.Property(e => e.ActividadesPrincipales).IsRequired(false);
+            });
+
+            modelBuilder.Entity<ProductividadCientifica>(entity =>
+            {
+                entity.Property(e => e.TipoProducto).IsRequired(false);
+                entity.Property(e => e.Titulo).IsRequired(false);
+                entity.Property(e => e.RevistaOLibro).IsRequired(false);
+                entity.Property(e => e.AnoPublicacion).IsRequired(false);
+            });
+
+            modelBuilder.Entity<CoautorProducto>(entity =>
+            {
+                entity.Property(e => e.Nombres).IsRequired(false);
+                entity.Property(e => e.ApellidoPaterno).IsRequired(false);
+                entity.Property(e => e.Rol).IsRequired(false);
+            });
+
+            modelBuilder.Entity<ProyectoInvestigacion>(entity =>
+            {
+                entity.Property(e => e.Nombre).IsRequired(false);
+                entity.Property(e => e.Institucion).IsRequired(false);
+                entity.Property(e => e.Periodo).IsRequired(false);
+                entity.Property(e => e.Funcion).IsRequired(false);
+                entity.Property(e => e.Estado).IsRequired(false);
+            });
+
+            modelBuilder.Entity<ReconocimientoAcademico>(entity =>
+            {
+                entity.Property(e => e.TipoRegistro).IsRequired(false);
+            });
+
+            modelBuilder.Entity<ContribucionSocial>(entity =>
+            {
+                entity.Property(e => e.NombreActividad).IsRequired(false);
+                entity.Property(e => e.TipoContribucion).IsRequired(false);
+                entity.Property(e => e.SectorAtendido).IsRequired(false);
+                entity.Property(e => e.FechaInicio).IsRequired(false);
+                entity.Property(e => e.Descripcion).IsRequired(false);
+                entity.Property(e => e.Resultados).IsRequired(false);
+            });
+
         }
 
         public override int SaveChanges()

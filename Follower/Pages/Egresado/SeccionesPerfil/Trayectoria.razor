@@ -18,11 +18,11 @@ else
     </div>
 
     <div class="space-y-6">
-        
+
         <!-- SITUACIÓN LABORAL ACTUAL -->
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <h2 class="text-lg font-bold text-gray-900 mb-4">Situación laboral actual</h2>
-            
+
             <div class="mb-6">
                 <label class="block text-xs font-bold text-gray-700 mb-2">¿Cuál es tu situación laboral actual?</label>
                 <select @bind="egresado.SituacionLaboral.EstadoActual" class="w-full md:w-1/2 border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366] bg-white">
@@ -66,7 +66,7 @@ else
             </div>
 
             <div class="flex justify-end">
-                <button @onclick="GuardarCambios" class="px-6 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244] shadow-sm">
+                <button type="button" @onclick="GuardarCambios" class="px-6 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244] shadow-sm">
                     Guardar situación actual
                 </button>
             </div>
@@ -78,7 +78,7 @@ else
                 <h2 class="text-lg font-bold text-gray-900">Historial de empleos</h2>
                 @if (!mostrandoFormEmpleo)
                 {
-                    <button @onclick="() => mostrandoFormEmpleo = true" class="text-sm font-medium text-[#003366] hover:underline">
+                    <button type="button" @onclick="AbrirNuevoEmpleo" class="text-sm font-medium text-[#003366] hover:underline">
                         + Registrar nuevo empleo
                     </button>
                 }
@@ -93,11 +93,11 @@ else
                         <div class="border border-gray-200 rounded-lg p-5 bg-white relative">
                             <!-- Botones de Acción (Esquina superior derecha) -->
                             <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
-                                <button class="hover:text-slate-600 transition-colors">Editar</button>
-                                <button @onclick="() => ConfirmarEliminarEmpleo(empleo)" class="hover:text-red-500 transition-colors">Eliminar</button>
+                                <button type="button" @onclick="() => EditarEmpleo(empleo)" class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button type="button" @onclick="() => ConfirmarEliminarEmpleo(empleo)" class="hover:text-red-500 transition-colors">Eliminar</button>
                             </div>
 
-                            <!-- Encabezado  -->
+                            <!-- Encabezado -->
                             <h3 class="font-bold text-slate-900 text-lg mb-1">@empleo.Puesto</h3>
 
                             <!-- Institución / Sector -->
@@ -157,12 +157,14 @@ else
                 <p class="text-sm text-gray-500 mb-6 italic">No has registrado ninguna experiencia laboral aún.</p>
             }
 
-            <!-- Formulario de Nuevo Empleo -->
+            <!-- Formulario de Nuevo / Editar Empleo -->
             @if (mostrandoFormEmpleo)
             {
                 <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-5">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar nuevo empleo</h3>
-                    
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">
+                        @(empleoEnEdicion != null ? "Editar empleo" : "Registrar nuevo empleo")
+                    </h3>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div class="md:col-span-2">
                             <label class="block text-xs text-gray-500 mb-1">Institución o empresa</label>
@@ -224,20 +226,22 @@ else
                     </div>
 
                     <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
-                        <button @onclick="CancelarNuevoEmpleo" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
-                        <button @onclick="GuardarEmpleo" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar empleo</button>
+                        <button type="button" @onclick="CancelarNuevoEmpleo" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
+                        <button type="button" @onclick="GuardarEmpleo" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">
+                            @(empleoEnEdicion != null ? "Guardar cambios" : "Guardar empleo")
+                        </button>
                     </div>
                 </div>
             }
         </div>
 
-        <!--  FORMACIÓN ACADÉMICA -->
+        <!-- FORMACIÓN ACADÉMICA -->
         <div class="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-lg font-bold text-gray-900">Formación académica (posgrados posteriores)</h2>
                 @if (!mostrandoFormEstudio)
                 {
-                    <button @onclick="() => mostrandoFormEstudio = true" class="text-sm font-medium text-[#003366] hover:underline">
+                    <button type="button" @onclick="AbrirNuevoEstudio" class="text-sm font-medium text-[#003366] hover:underline">
                         + Registrar nuevo estudio
                     </button>
                 }
@@ -252,8 +256,8 @@ else
                         <div class="border border-gray-200 rounded-lg p-5 bg-white relative">
                             <!-- Botones de Acción (Esquina superior derecha) -->
                             <div class="absolute top-4 right-5 flex space-x-3 text-[13px] font-medium text-slate-400">
-                                <button class="hover:text-slate-600 transition-colors">Editar</button>
-                                <button @onclick="() => ConfirmarEliminarEstudio(estudio)" class="hover:text-red-500 transition-colors">Eliminar</button>
+                                <button type="button" @onclick="() => EditarEstudio(estudio)" class="hover:text-slate-600 transition-colors">Editar</button>
+                                <button type="button" @onclick="() => ConfirmarEliminarEstudio(estudio)" class="hover:text-red-500 transition-colors">Eliminar</button>
                             </div>
 
                             <!-- Encabezado Principal -->
@@ -269,7 +273,7 @@ else
                             <!-- Fechas y Estado -->
                             <p class="text-sm text-slate-500 mb-5">
                                 @(estudio.FechaInicio?.ToString("MMMM yyyy").Replace(estudio.FechaInicio.Value.ToString("MMMM"), char.ToUpper(estudio.FechaInicio.Value.ToString("MMMM")[0]) + estudio.FechaInicio.Value.ToString("MMMM").Substring(1)) ?? "N/A") -
-                                @if (estudio.EstadoPrograma == "En curso")
+                                @if (estudio.EsFormacionActual || estudio.EstadoPrograma == "En curso" || estudio.EstadoPrograma == "Lo estoy cursando actualmente")
                                 {
                                     <span>Presente <span class="font-bold text-[#003366]">(En curso)</span></span>
                                 }
@@ -305,7 +309,6 @@ else
                                             <p class="text-[11px] font-bold text-slate-400 mb-0.5">MONTO ASIGNADO</p>
                                             <p class="text-sm text-slate-700">@estudio.MontoAsignado</p>
                                         </div>
-                                        @* asignar vigencia despues*@
                                     </div>
                                 </div>
                             }
@@ -318,12 +321,14 @@ else
                 <p class="text-sm text-gray-500 mb-6 italic">No has registrado posgrados o estudios adicionales.</p>
             }
 
-            <!-- Formulario de Nuevo Estudio -->
+            <!-- Formulario de Nuevo / Editar Estudio -->
             @if (mostrandoFormEstudio)
             {
                 <div class="border border-blue-100 bg-[#fbfdff] rounded-lg p-5">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">Registrar nuevo programa de estudio</h3>
-                    
+                    <h3 class="text-sm font-bold text-gray-900 mb-4 border-b pb-2">
+                        @(estudioEnEdicion != null ? "Editar programa de estudio" : "Registrar nuevo programa de estudio")
+                    </h3>
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                         <div class="md:col-span-2">
                             <label class="block text-xs text-gray-500 mb-1">Nombre del programa</label>
@@ -358,7 +363,6 @@ else
                             <input type="text" @bind="nuevoEstudio.Pais" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
                         </div>
 
-
                         <div>
                             <label class="block text-xs text-gray-500 mb-1">Fecha de inicio</label>
                             <input type="date" @bind="nuevoEstudio.FechaInicio" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366] focus:border-[#003366]" />
@@ -370,10 +374,7 @@ else
                                 <input type="checkbox" @bind="nuevoEstudio.EsFormacionActual" class="rounded text-[#003366] focus:ring-[#003366]" />
                                 <span class="text-xs text-gray-600">Actualmente estudio aquí</span>
                             </label>
-                        </div
-
-
-
+                        </div>
                     </div>
 
                     <!-- Sección de Becas -->
@@ -407,15 +408,17 @@ else
                     </div>
 
                     <div class="flex justify-end space-x-3 mt-4 pt-4 border-t border-gray-200">
-                        <button @onclick="CancelarNuevoEstudio" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
-                        <button @onclick="GuardarEstudio" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">Guardar estudio</button>
+                        <button type="button" @onclick="CancelarNuevoEstudio" class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800">Cancelar</button>
+                        <button type="button" @onclick="GuardarEstudio" class="px-4 py-2 bg-[#003366] text-white text-sm font-medium rounded-md hover:bg-[#002244]">
+                            @(estudioEnEdicion != null ? "Guardar cambios" : "Guardar estudio")
+                        </button>
                     </div>
                 </div>
             }
         </div>
     </div>
 
-    <!-- Toast  -->
+    <!-- Toast -->
     @if (!string.IsNullOrEmpty(mensajeNotificacion))
     {
         <div class="fixed bottom-6 right-6 bg-white text-slate-800 px-5 py-3 rounded-md shadow-lg border border-slate-100 flex items-center z-50 transform transition-all duration-300">
@@ -434,9 +437,11 @@ else
 
     private bool mostrandoFormEmpleo = false;
     private ExperienciaLaboral nuevoEmpleo = new ExperienciaLaboral();
+    private ExperienciaLaboral? empleoEnEdicion = null;
 
     private bool mostrandoFormEstudio = false;
     private FormacionAcademica nuevoEstudio = new FormacionAcademica();
+    private FormacionAcademica? estudioEnEdicion = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -474,29 +479,85 @@ else
     }
 
     // Lógica de Experiencia Laboral
+    private void AbrirNuevoEmpleo()
+    {
+        empleoEnEdicion = null;
+        nuevoEmpleo = new ExperienciaLaboral();
+        mostrandoFormEmpleo = true;
+    }
+
+    private void EditarEmpleo(ExperienciaLaboral empleo)
+    {
+        empleoEnEdicion = empleo;
+        nuevoEmpleo = new ExperienciaLaboral
+        {
+            IdExperienciaLaboral = empleo.IdExperienciaLaboral,
+            EgresadoId = empleo.EgresadoId,
+            Institucion = empleo.Institucion,
+            Puesto = empleo.Puesto,
+            Sector = empleo.Sector,
+            FechaInicio = empleo.FechaInicio,
+            FechaFin = empleo.FechaFin,
+            EsEmpleoActual = empleo.EsEmpleoActual,
+            ActividadesPrincipales = empleo.ActividadesPrincipales,
+            NivelEducativo = empleo.NivelEducativo,
+            RelacionConFormacion = empleo.RelacionConFormacion
+        };
+        mostrandoFormEmpleo = true;
+    }
+
     private async Task GuardarEmpleo()
     {
-        if (string.IsNullOrWhiteSpace(nuevoEmpleo.Institucion) || string.IsNullOrWhiteSpace(nuevoEmpleo.Puesto))
+        if (string.IsNullOrWhiteSpace(nuevoEmpleo.Institucion) ||
+             string.IsNullOrWhiteSpace(nuevoEmpleo.Puesto) ||
+             string.IsNullOrWhiteSpace(nuevoEmpleo.Sector) ||
+             !nuevoEmpleo.FechaInicio.HasValue ||
+             string.IsNullOrWhiteSpace(nuevoEmpleo.ActividadesPrincipales))
         {
-            await MostrarNotificacion("Institución y Puesto son obligatorios.");
+            await MostrarNotificacion("Completa institución, puesto, sector, fecha de inicio y actividades principales.");
             return;
         }
+        if (nuevoEmpleo.EsEmpleoActual)
+        {
+            nuevoEmpleo.FechaFin = null;
+        }
+
+        bool esEdicion = empleoEnEdicion != null;
 
         try
         {
-            nuevoEmpleo.EgresadoId = egresado.IdEgresado;
-            egresado.ExperienciasLaborales.Add(nuevoEmpleo);
+            if (esEdicion)
+            {
+                empleoEnEdicion!.Institucion = nuevoEmpleo.Institucion;
+                empleoEnEdicion.Puesto = nuevoEmpleo.Puesto;
+                empleoEnEdicion.Sector = nuevoEmpleo.Sector;
+                empleoEnEdicion.FechaInicio = nuevoEmpleo.FechaInicio;
+                empleoEnEdicion.FechaFin = nuevoEmpleo.FechaFin;
+                empleoEnEdicion.EsEmpleoActual = nuevoEmpleo.EsEmpleoActual;
+                empleoEnEdicion.ActividadesPrincipales = nuevoEmpleo.ActividadesPrincipales;
+                empleoEnEdicion.NivelEducativo = nuevoEmpleo.NivelEducativo;
+                empleoEnEdicion.RelacionConFormacion = nuevoEmpleo.RelacionConFormacion;
+            }
+            else
+            {
+                nuevoEmpleo.EgresadoId = egresado.IdEgresado;
+                egresado.ExperienciasLaborales.Add(nuevoEmpleo);
+            }
 
             await EgresadoService.ActualizarAsync(egresado);
 
             nuevoEmpleo = new ExperienciaLaboral();
+            empleoEnEdicion = null;
             mostrandoFormEmpleo = false;
-            await MostrarNotificacion("Empleo registrado exitosamente.");
+            await MostrarNotificacion(esEdicion ? "Empleo actualizado exitosamente." : "Empleo registrado exitosamente.");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error al guardar empleo: {ex.Message}");
-            egresado.ExperienciasLaborales.Remove(nuevoEmpleo); // falló BD
+            if (!esEdicion)
+            {
+                egresado.ExperienciasLaborales.Remove(nuevoEmpleo);
+            }
             await MostrarNotificacion("Error al guardar el empleo.");
         }
     }
@@ -504,6 +565,7 @@ else
     private void CancelarNuevoEmpleo()
     {
         nuevoEmpleo = new ExperienciaLaboral();
+        empleoEnEdicion = null;
         mostrandoFormEmpleo = false;
     }
 
@@ -517,6 +579,12 @@ else
             }
 
             egresado.ExperienciasLaborales.Remove(empleo);
+
+            if (empleo == empleoEnEdicion)
+            {
+                CancelarNuevoEmpleo();
+            }
+
             await MostrarNotificacion("Empleo eliminado.");
         }
         catch (Exception ex)
@@ -527,29 +595,103 @@ else
     }
 
     // Lógica de Formación Académica
+    private void AbrirNuevoEstudio()
+    {
+        estudioEnEdicion = null;
+        nuevoEstudio = new FormacionAcademica();
+        mostrandoFormEstudio = true;
+    }
+
+    private void EditarEstudio(FormacionAcademica estudio)
+    {
+        estudioEnEdicion = estudio;
+        nuevoEstudio = new FormacionAcademica
+        {
+            IdFormacionAcademica = estudio.IdFormacionAcademica,
+            EgresadoId = estudio.EgresadoId,
+            NombrePrograma = estudio.NombrePrograma,
+            Grado = estudio.Grado,
+            Institucion = estudio.Institucion,
+            EstadoPrograma = estudio.EstadoPrograma,
+            Pais = estudio.Pais,
+            FechaInicio = estudio.FechaInicio,
+            FechaFin = estudio.FechaFin,
+            EsFormacionActual = estudio.EsFormacionActual,
+            RecibioBeca = estudio.RecibioBeca,
+            TipoApoyo = estudio.TipoApoyo,
+            InstitucionOtorgante = estudio.InstitucionOtorgante,
+            AnoOtorgamiento = estudio.AnoOtorgamiento,
+            MontoAsignado = estudio.MontoAsignado
+        };
+        mostrandoFormEstudio = true;
+    }
+
     private async Task GuardarEstudio()
     {
-        if (string.IsNullOrWhiteSpace(nuevoEstudio.NombrePrograma))
+        if (string.IsNullOrWhiteSpace(nuevoEstudio.NombrePrograma) ||
+             string.IsNullOrWhiteSpace(nuevoEstudio.Grado) ||
+             string.IsNullOrWhiteSpace(nuevoEstudio.Institucion) ||
+             string.IsNullOrWhiteSpace(nuevoEstudio.Pais) ||
+             string.IsNullOrWhiteSpace(nuevoEstudio.EstadoPrograma) ||
+             !nuevoEstudio.FechaInicio.HasValue)
         {
-            await MostrarNotificacion("El nombre del programa es obligatorio.");
+            await MostrarNotificacion("Completa nombre del programa, grado, institución, país, estado y fecha de inicio.");
             return;
         }
 
+        if (nuevoEstudio.EsFormacionActual)
+        {
+            nuevoEstudio.FechaFin = null;
+        }
+
+        if (!nuevoEstudio.RecibioBeca)
+        {
+            nuevoEstudio.TipoApoyo = null;
+            nuevoEstudio.InstitucionOtorgante = null;
+            nuevoEstudio.AnoOtorgamiento = null;
+            nuevoEstudio.MontoAsignado = null;
+        }
+
+        bool esEdicion = estudioEnEdicion != null;
+
         try
         {
-            nuevoEstudio.EgresadoId = egresado.IdEgresado;
-            egresado.FormacionesAcademicas.Add(nuevoEstudio);
+            if (esEdicion)
+            {
+                estudioEnEdicion!.NombrePrograma = nuevoEstudio.NombrePrograma;
+                estudioEnEdicion.Grado = nuevoEstudio.Grado;
+                estudioEnEdicion.Institucion = nuevoEstudio.Institucion;
+                estudioEnEdicion.EstadoPrograma = nuevoEstudio.EstadoPrograma;
+                estudioEnEdicion.Pais = nuevoEstudio.Pais;
+                estudioEnEdicion.FechaInicio = nuevoEstudio.FechaInicio;
+                estudioEnEdicion.FechaFin = nuevoEstudio.FechaFin;
+                estudioEnEdicion.EsFormacionActual = nuevoEstudio.EsFormacionActual;
+                estudioEnEdicion.RecibioBeca = nuevoEstudio.RecibioBeca;
+                estudioEnEdicion.TipoApoyo = nuevoEstudio.TipoApoyo;
+                estudioEnEdicion.InstitucionOtorgante = nuevoEstudio.InstitucionOtorgante;
+                estudioEnEdicion.AnoOtorgamiento = nuevoEstudio.AnoOtorgamiento;
+                estudioEnEdicion.MontoAsignado = nuevoEstudio.MontoAsignado;
+            }
+            else
+            {
+                nuevoEstudio.EgresadoId = egresado.IdEgresado;
+                egresado.FormacionesAcademicas.Add(nuevoEstudio);
+            }
 
             await EgresadoService.ActualizarAsync(egresado);
 
             nuevoEstudio = new FormacionAcademica();
+            estudioEnEdicion = null;
             mostrandoFormEstudio = false;
-            await MostrarNotificacion("Estudio registrado exitosamente.");
+            await MostrarNotificacion(esEdicion ? "Estudio actualizado exitosamente." : "Estudio registrado exitosamente.");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error al guardar estudio: {ex.Message}");
-            egresado.FormacionesAcademicas.Remove(nuevoEstudio); // falló BD
+            if (!esEdicion)
+            {
+                egresado.FormacionesAcademicas.Remove(nuevoEstudio);
+            }
             await MostrarNotificacion("Error al guardar el estudio.");
         }
     }
@@ -557,6 +699,7 @@ else
     private void CancelarNuevoEstudio()
     {
         nuevoEstudio = new FormacionAcademica();
+        estudioEnEdicion = null;
         mostrandoFormEstudio = false;
     }
 
@@ -570,6 +713,12 @@ else
             }
 
             egresado.FormacionesAcademicas.Remove(estudio);
+
+            if (estudio == estudioEnEdicion)
+            {
+                CancelarNuevoEstudio();
+            }
+
             await MostrarNotificacion("Estudio eliminado.");
         }
         catch (Exception ex)
