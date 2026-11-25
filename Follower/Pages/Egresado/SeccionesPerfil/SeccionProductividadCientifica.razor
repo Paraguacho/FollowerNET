@@ -244,7 +244,7 @@
                                         {
                                             <li class="flex justify-between items-center bg-white border border-gray-200 px-3 py-1.5 rounded text-xs">
                                                 <span><span class="font-bold">@c.Nombres @c.ApellidoPaterno</span> - @c.Rol</span>
-                                                <button type="button" @onclick="() => nuevoRegistro.Coautores.Remove(c)" class="text-red-500 hover:underline">Quitar</button>
+                                                <button type="button" @onclick="() => QuitarCoautor(c)" class="text-red-500 hover:underline">Quitar</button>
                                             </li>
                                         }
                                     </ul>
@@ -271,12 +271,14 @@
     public Egresado EgresadoModel { get; set; } = null!;
     [Parameter]
     public EventCallback<string> OnNotificar { get; set; }
+
     private bool guardando = false;
     private bool mostrandoFormulario = false;
     private bool expandido = true;
     private ProductividadCientifica nuevoRegistro = new();
     private ProductividadCientifica? registroEnEdicion = null;
     private CoautorProducto tempCoautor = new();
+    private List<CoautorProducto> coautoresAEliminar = new();
     private Dictionary<string, string> errores = new();
 
     private void ToggleExpandido() => expandido = !expandido;
@@ -286,6 +288,7 @@
     private void AbrirNuevoFormulario()
     {
         errores.Clear();
+        coautoresAEliminar.Clear();
         registroEnEdicion = null;
         nuevoRegistro = new ProductividadCientifica();
         tempCoautor = new CoautorProducto();
@@ -295,6 +298,7 @@
     private void IniciarEdicion(ProductividadCientifica prod)
     {
         errores.Clear();
+        coautoresAEliminar.Clear();
         registroEnEdicion = prod;
         nuevoRegistro = new ProductividadCientifica
         {
@@ -311,12 +315,7 @@
             ArchivoPdf = prod.ArchivoPdf,
             ParticipoProfesorMied = prod.ParticipoProfesorMied,
             NombreProfesorMied = prod.NombreProfesorMied,
-            Coautores = prod.Coautores.Select(c => new CoautorProducto
-            {
-                Nombres = c.Nombres,
-                ApellidoPaterno = c.ApellidoPaterno,
-                Rol = c.Rol
-            }).ToList()
+            Coautores = prod.Coautores.ToList()
         };
         tempCoautor = new CoautorProducto();
         mostrandoFormulario = true;
@@ -360,11 +359,21 @@
         {
             nuevoRegistro.Coautores.Add(new CoautorProducto
             {
-                Nombres = tempCoautor.Nombres,
-                ApellidoPaterno = tempCoautor.ApellidoPaterno,
+                ProductividadId = nuevoRegistro.IdProductividad,
+                Nombres = tempCoautor.Nombres.Trim(),
+                ApellidoPaterno = tempCoautor.ApellidoPaterno.Trim(),
                 Rol = tempCoautor.Rol
             });
             tempCoautor = new CoautorProducto();
+        }
+    }
+
+    private void QuitarCoautor(CoautorProducto coautor)
+    {
+        nuevoRegistro.Coautores.Remove(coautor);
+        if (coautor.IdCoautor > 0 && !coautoresAEliminar.Contains(coautor))
+        {
+            coautoresAEliminar.Add(coautor);
         }
     }
 
@@ -383,8 +392,8 @@
         var esEdicion = registroEnEdicion != null;
         var target = registroEnEdicion;
         var copiaNuevo = nuevoRegistro;
+        var aEliminar = coautoresAEliminar.ToList();
 
-        // Respaldo por si falla la BD
         ProductividadCientifica? respaldo = null;
         if (esEdicion && target != null)
         {
@@ -421,12 +430,16 @@
             EgresadoModel.ProductividadesCientificas.Add(copiaNuevo);
         }
 
-        Cancelar();
-        StateHasChanged();
-
         try
         {
+            foreach (var coautor in aEliminar)
+            {
+                await EgresadoService.EliminarCoautorAsync(coautor);
+            }
+
             await EgresadoService.ActualizarAsync(EgresadoModel);
+
+            Cancelar();
             await OnNotificar.InvokeAsync(esEdicion
                 ? "Producto actualizado exitosamente."
                 : "Producto registrado exitosamente.");
@@ -463,17 +476,35 @@
     private void Cancelar()
     {
         errores.Clear();
+        coautoresAEliminar.Clear();
         registroEnEdicion = null;
         nuevoRegistro = new ProductividadCientifica();
         tempCoautor = new CoautorProducto();
         mostrandoFormulario = false;
-
     }
 
     private async Task ConfirmarEliminar(ProductividadCientifica prod)
     {
-        EgresadoModel.ProductividadesCientificas.Remove(prod);
-        await EgresadoService.ActualizarAsync(EgresadoModel);
-        await OnNotificar.InvokeAsync("Producto eliminado.");
+        try
+        {
+            if (prod.IdProductividad > 0)
+            {
+                await EgresadoService.EliminarProductividadCientificaAsync(prod);
+            }
+
+            EgresadoModel.ProductividadesCientificas.Remove(prod);
+
+            if (prod == registroEnEdicion)
+            {
+                Cancelar();
+            }
+
+            await OnNotificar.InvokeAsync("Producto eliminado.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error al eliminar producto: {ex.Message}");
+            await OnNotificar.InvokeAsync("No se pudo eliminar el producto.");
+        }
     }
 }

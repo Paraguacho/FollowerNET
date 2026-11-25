@@ -59,35 +59,39 @@ namespace Follower.Services
 
         public async Task EliminarProductividadCientificaAsync(ProductividadCientifica productividad)
         {
-            try
-            {
-                await using var context = await _contextFactory.CreateDbContextAsync();
-                var entry = context.Entry(productividad);
-                if (!entry.IsKeySet) return;
+            if (productividad.IdProductividad <= 0) return;
 
-                if (productividad.Coautores != null)
-                {
-                    foreach (var coautor in productividad.Coautores)
-                    {
-                        var coautorEntry = context.Entry(coautor);
-                        if (coautorEntry.IsKeySet)
-                        {
-                            coautorEntry.State = EntityState.Deleted;
-                        }
-                    }
-                }
+            await using var context = await _contextFactory.CreateDbContextAsync();
 
-                entry.State = EntityState.Deleted;
-                await context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
+            var prodDb = await context.ProductividadesCientificas
+                .Include(p => p.Coautores)
+                .FirstOrDefaultAsync(p => p.IdProductividad == productividad.IdProductividad);
+
+            if (prodDb == null) return;
+
+            if (prodDb.Coautores.Any())
             {
-                // El registro ya había sido eliminado (por ejemplo, doble clic rápido)
+                context.CoautoresProductos.RemoveRange(prodDb.Coautores);
             }
+
+            context.ProductividadesCientificas.Remove(prodDb);
+            await context.SaveChangesAsync();
         }
 
-        public Task EliminarCoautorAsync(CoautorProducto coautor)
-            => EliminarEntidadAsync(coautor);
+        public async Task EliminarCoautorAsync(CoautorProducto coautor)
+        {
+            if (coautor.IdCoautor <= 0) return;
+
+            await using var context = await _contextFactory.CreateDbContextAsync();
+
+            var coautorDb = await context.CoautoresProductos
+                .FirstOrDefaultAsync(c => c.IdCoautor == coautor.IdCoautor);
+
+            if (coautorDb == null) return;
+
+            context.CoautoresProductos.Remove(coautorDb);
+            await context.SaveChangesAsync();
+        }
 
         public Task EliminarProyectoInvestigacionAsync(ProyectoInvestigacion proyecto)
             => EliminarEntidadAsync(proyecto);
