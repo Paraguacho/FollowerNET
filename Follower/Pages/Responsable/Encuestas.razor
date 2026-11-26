@@ -1,0 +1,438 @@
+@page "/responsable/encuestas"
+@attribute [Authorize(Roles = "ResponsablePrograma")]
+@using System.Globalization
+@using System.Security.Claims
+@using Follower.Models
+@using Follower.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
+@inject Follower.Data.ApplicationDbContext DbContext
+@inject IJSRuntime JS
+@inject ILogger<Encuestas> Logger
+
+<div class="min-h-[calc(100vh-4rem)] bg-gray-50">
+    @if (cargando)
+    {
+        <div class="p-8 text-center text-sm text-gray-500">Cargando resultados de encuestas...</div>
+    }
+    else if (!string.IsNullOrWhiteSpace(error))
+    {
+        <div class="m-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700" role="alert">@error</div>
+    }
+    else if (programaActual is null)
+    {
+        <div class="m-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">No tienes un programa educativo asignado.</div>
+    }
+    else
+    {
+        <div class="grid min-h-[calc(100vh-4rem)] grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)]">
+            <aside class="border-b border-gray-200 bg-white lg:border-b-0 lg:border-r">
+                <div class="border-b border-gray-200 px-5 py-5">
+                    <p class="text-lg font-bold text-gray-900">@programaActual.Siglas</p>
+                    <p class="mt-1 text-xs leading-5 text-gray-500">@programaActual.NombrePrograma</p>
+                </div>
+                <nav aria-label="Gestión de encuestas" class="p-4">
+                    <p class="mb-3 px-2 text-[10px] font-semibold uppercase tracking-wider text-gray-400">Gestión de preguntas</p>
+                    <a href="/responsable/encuestas"
+                       aria-current="page"
+                       class="flex items-center gap-2 rounded-md border-l-4 border-[#003b5c] bg-blue-50 px-3 py-2.5 text-sm font-semibold text-[#003b5c]">
+                        <span aria-hidden="true">▣</span>
+                        Resultados y activas
+                    </a>
+                </nav>
+            </aside>
+
+            <main class="flex min-w-0 flex-col">
+                <header class="border-b border-gray-200 bg-white px-5 py-5 sm:px-7">
+                    <h1 class="text-xl font-bold text-gray-900">Resultados de encuestas</h1>
+                    <p class="mt-1 text-sm text-gray-600">Analiza las respuestas proporcionadas por los egresados a las preguntas de tu programa.</p>
+                </header>
+
+                <div class="grid min-h-0 flex-1 grid-cols-1 gap-4 p-4 sm:p-5 xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.55fr)]">
+                    <section class="flex min-h-[420px] min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm xl:max-h-[calc(100vh-10rem)]">
+                        <div class="border-b border-gray-200 bg-gray-50 px-4 py-3">
+                            <label for="filtro-seccion" class="sr-only">Filtrar preguntas por sección</label>
+                            <select id="filtro-seccion"
+                                    @bind="idSeccionSeleccionada"
+                                    @bind:after="AlCambiarSeccion"
+                                    class="w-full border-0 bg-transparent text-sm font-semibold text-gray-800 focus:outline-none focus:ring-0">
+                                <option value="0">Todas las preguntas</option>
+                                @foreach (var seccion in secciones.OrderBy(item => item.OrdenAparicion))
+                                {
+                                    <option value="@seccion.IdSeccion">@seccion.TituloSeccion</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto">
+                            @if (!PreguntasFiltradas.Any())
+                            {
+                                <p class="p-6 text-center text-sm text-gray-500">Todavía no hay preguntas configuradas para este programa.</p>
+                            }
+                            else
+                            {
+                                @foreach (var pregunta in PreguntasFiltradas)
+                                {
+                                    var seleccionada = pregunta.IdCampo == idCampoSeleccionado;
+                                    var respuestasPregunta = ContarRespuestas(pregunta);
+                                    <button @key="pregunta.IdCampo"
+                                            @onclick="() => SeleccionarPregunta(pregunta.IdCampo)"
+                                            aria-pressed="@seleccionada"
+                                            class="w-full border-b border-gray-100 border-l-[3px] px-4 py-4 text-left transition-colors @(seleccionada ? "border-l-[#003b5c] bg-blue-50/50" : "border-l-transparent hover:bg-gray-50")">
+                                        <span class="flex items-start justify-between gap-2">
+                                            <span class="text-[13px] font-semibold leading-5 text-gray-800">@pregunta.NombreEtiqueta</span>
+                                            <span class="mt-1 inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold text-green-700">
+                                                <span class="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+                                                ACTIVA
+                                            </span>
+                                        </span>
+                                        <span class="mt-1 block text-xs text-gray-500">@pregunta.SeccionPersonalizada.TituloSeccion</span>
+                                        <span class="mt-3 flex items-center justify-between gap-2 text-[11px] text-gray-400">
+                                            <span>@TipoCampo(pregunta.TipoDato)</span>
+                                            <span class="rounded border border-blue-100 bg-blue-50 px-2 py-1 font-semibold text-[#003b5c]">
+                                                @respuestasPregunta @(respuestasPregunta == 1 ? "respuesta" : "respuestas")
+                                            </span>
+                                        </span>
+                                    </button>
+                                }
+                            }
+                        </div>
+                    </section>
+
+                    <section class="flex min-w-0 flex-col overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+                        @if (PreguntaSeleccionada is null)
+                        {
+                            <div class="flex flex-1 items-center justify-center p-8 text-center text-sm text-gray-500">
+                                Selecciona una pregunta para consultar sus resultados.
+                            </div>
+                        }
+                        else
+                        {
+                            var pregunta = PreguntaSeleccionada;
+                            var respuestas = ObtenerRespuestas(pregunta);
+                            var cantidadTotal = egresados.Count;
+                            var cantidadRespuestas = respuestas.Count;
+                            var tasaRespuesta = cantidadTotal == 0 ? 0 : cantidadRespuestas * 100d / cantidadTotal;
+
+                            <header class="flex flex-col gap-4 border-b border-gray-100 p-5 sm:flex-row sm:items-start sm:justify-between sm:p-6">
+                                <div class="min-w-0">
+                                    <div class="mb-2 flex flex-wrap items-center gap-2">
+                                        <span class="rounded bg-green-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-green-700">Activa</span>
+                                        <span class="text-xs text-gray-400">@pregunta.SeccionPersonalizada.TituloSeccion · @TipoCampo(pregunta.TipoDato)</span>
+                                    </div>
+                                    <h2 class="text-lg font-bold leading-6 text-gray-900">@pregunta.NombreEtiqueta</h2>
+                                    <p class="mt-1 text-xs text-gray-500">Respuestas recibidas de los egresados aprobados de este programa.</p>
+                                </div>
+                                <button @onclick="DescargarReporte"
+                                        disabled="@descargando"
+                                        class="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-[#003b5c] px-3 py-2 text-sm font-medium text-[#003b5c] hover:bg-blue-50 disabled:cursor-wait disabled:opacity-60">
+                                    <span aria-hidden="true">⇩</span>
+                                    @(descargando ? "Generando reporte..." : "Generar reporte PDF")
+                                </button>
+                            </header>
+
+                            <div class="flex-1 overflow-y-auto p-5 sm:p-6">
+                                @if (!string.IsNullOrWhiteSpace(mensaje))
+                                {
+                                    <p class="mb-4 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800" role="status">@mensaje</p>
+                                }
+                                @if (!string.IsNullOrWhiteSpace(errorDescarga))
+                                {
+                                    <p class="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">@errorDescarga</p>
+                                }
+
+                                <div class="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                                    <div class="rounded-lg border border-gray-200 px-4 py-4 text-center shadow-sm">
+                                        <p class="text-[10px] font-medium uppercase tracking-wider text-gray-500">Alcance total</p>
+                                        <p class="mt-1 text-2xl font-bold text-gray-900">@cantidadTotal</p>
+                                        <p class="mt-1 text-[10px] text-gray-400">Egresados aprobados</p>
+                                    </div>
+                                    <div class="rounded-lg border border-[#003b5c] px-4 py-4 text-center shadow-sm sm:border-b-4">
+                                        <p class="text-[10px] font-medium uppercase tracking-wider text-gray-500">Respuestas</p>
+                                        <p class="mt-1 text-2xl font-bold text-[#003b5c]">@cantidadRespuestas</p>
+                                        <p class="mt-1 text-[10px] text-gray-400">Registradas hasta hoy</p>
+                                    </div>
+                                    <div class="rounded-lg border border-gray-200 px-4 py-4 text-center shadow-sm">
+                                        <p class="text-[10px] font-medium uppercase tracking-wider text-gray-500">Tasa de respuesta</p>
+                                        <p class="mt-1 text-2xl font-bold text-gray-900">@tasaRespuesta.ToString("0.#", CultureInfo.InvariantCulture)%</p>
+                                        <p class="mt-1 text-[10px] text-green-600">Del total de egresados aprobados</p>
+                                    </div>
+                                </div>
+
+                                @if (OpcionesDistribucion(pregunta, respuestas).Count > 0)
+                                {
+                                    <section class="mb-6 rounded-lg border border-gray-200 p-5 shadow-sm">
+                                        <h3 class="mb-5 text-sm font-bold text-gray-900">Distribución de respuestas</h3>
+                                        @foreach (var opcion in OpcionesDistribucion(pregunta, respuestas))
+                                        {
+                                            <div class="mb-4 last:mb-0">
+                                                <div class="mb-1 flex items-center justify-between gap-3 text-xs">
+                                                    <span class="text-gray-700">@opcion.Nombre</span>
+                                                    <span class="shrink-0 font-semibold text-gray-800">@opcion.Porcentaje.ToString("0.#", CultureInfo.InvariantCulture)% <span class="font-normal text-gray-400">(@opcion.Cantidad)</span></span>
+                                                </div>
+                                                <div class="h-2 overflow-hidden rounded-full bg-gray-100">
+                                                    <div class="h-full rounded-full bg-[#003b5c]" style="width: @($"{opcion.Porcentaje.ToString(CultureInfo.InvariantCulture)}%")"></div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </section>
+                                }
+
+                                <section class="overflow-hidden rounded-lg border border-gray-200">
+                                    <div class="flex flex-col gap-1 border-b border-gray-100 bg-gray-50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                        <h3 class="text-sm font-bold text-gray-900">Respuestas detalladas</h3>
+                                        <span class="text-xs text-gray-500">@(cantidadRespuestas == 0 ? "Sin respuestas registradas" : $"Mostrando {cantidadRespuestas} de {cantidadRespuestas} respuestas")</span>
+                                    </div>
+                                    @if (respuestas.Count == 0)
+                                    {
+                                        <p class="p-8 text-center text-sm text-gray-500">Esta pregunta todavía no tiene respuestas.</p>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var respuesta in respuestas)
+                                        {
+                                            <article @key="respuesta.IdEgresado" class="border-b border-gray-100 p-4 last:border-b-0 sm:p-5">
+                                                <div class="mb-3 flex items-center gap-3">
+                                                    <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100 text-[10px] font-bold text-[#003b5c]">@Iniciales(respuesta.Nombre)</div>
+                                                    <div class="min-w-0">
+                                                        <p class="break-words text-xs font-semibold text-gray-900">@respuesta.Nombre</p>
+                                                        <p class="mt-1 text-[10px] text-gray-500">@(respuesta.FechaEgreso is int anio ? $"Egresado(a) {anio}" : "Año de egreso no especificado")</p>
+                                                    </div>
+                                                </div>
+                                                <p class="whitespace-pre-line break-words rounded-md border border-gray-100 bg-gray-50 px-3 py-3 text-sm leading-6 text-gray-700">@respuesta.Valor</p>
+                                            </article>
+                                        }
+                                    }
+                                </section>
+                            </div>
+                        }
+                    </section>
+                </div>
+            </main>
+        </div>
+    }
+</div>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> AuthStateTask { get; set; } = default!;
+
+    private ProgramaEducativo? programaActual;
+    private readonly List<SeccionPersonalizada> secciones = new();
+    private readonly List<CampoPersonalizado> preguntas = new();
+    private readonly List<Egresado> egresados = new();
+    private int idSeccionSeleccionada;
+    private int idCampoSeleccionado;
+    private string? error;
+    private string? errorDescarga;
+    private string? mensaje;
+    private bool cargando = true;
+    private bool descargando;
+
+    private IEnumerable<CampoPersonalizado> PreguntasFiltradas =>
+        preguntas.Where(pregunta => idSeccionSeleccionada == 0 || pregunta.IdSeccion == idSeccionSeleccionada);
+
+    private CampoPersonalizado? PreguntaSeleccionada =>
+        preguntas.FirstOrDefault(pregunta => pregunta.IdCampo == idCampoSeleccionado);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var user = (await AuthStateTask).User;
+            if (!int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var idResponsable))
+            {
+                error = "No fue posible identificar la sesión del responsable.";
+                return;
+            }
+
+            var asignacion = await DbContext.ProgramasResponsables
+                .AsNoTracking()
+                .Include(item => item.ProgramaEducativo)
+                .FirstOrDefaultAsync(item => item.IdUsuario == idResponsable);
+            if (asignacion is null)
+            {
+                return;
+            }
+
+            programaActual = asignacion.ProgramaEducativo;
+            secciones.AddRange(await DbContext.SeccionesPersonalizadas
+                .AsNoTracking()
+                .Where(seccion => seccion.IdPrograma == asignacion.IdPrograma)
+                .OrderBy(seccion => seccion.OrdenAparicion)
+                .ToListAsync());
+            preguntas.AddRange(await DbContext.CamposPersonalizados
+                .AsNoTracking()
+                .Include(campo => campo.SeccionPersonalizada)
+                .Include(campo => campo.Opciones)
+                .Where(campo => campo.SeccionPersonalizada.IdPrograma == asignacion.IdPrograma)
+                .OrderBy(campo => campo.SeccionPersonalizada.OrdenAparicion)
+                .ThenBy(campo => campo.Orden)
+                .ToListAsync());
+            egresados.AddRange(await ObtenerEgresadosAprobadosAsync(asignacion.IdPrograma));
+            idCampoSeleccionado = preguntas.FirstOrDefault()?.IdCampo ?? 0;
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "No fue posible cargar los resultados de encuestas.");
+            error = "No fue posible cargar los resultados. Intenta nuevamente más tarde.";
+        }
+        finally
+        {
+            cargando = false;
+        }
+    }
+
+    private async Task DescargarReporte()
+    {
+        if (descargando)
+        {
+            return;
+        }
+
+        descargando = true;
+        errorDescarga = null;
+        mensaje = null;
+
+        try
+        {
+            var user = (await AuthStateTask).User;
+            if (!int.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var idResponsable))
+            {
+                errorDescarga = "No fue posible identificar la sesión del responsable.";
+                return;
+            }
+
+            var asignacion = await DbContext.ProgramasResponsables
+                .AsNoTracking()
+                .Include(item => item.ProgramaEducativo)
+                .FirstOrDefaultAsync(item => item.IdUsuario == idResponsable);
+            if (asignacion is null)
+            {
+                errorDescarga = "No tienes un programa educativo asignado.";
+                return;
+            }
+
+            var seccionesActualizadas = await DbContext.SeccionesPersonalizadas
+                .AsNoTracking()
+                .Include(seccion => seccion.Campos)
+                .Where(seccion => seccion.IdPrograma == asignacion.IdPrograma)
+                .ToListAsync();
+            var egresadosActualizados = await ObtenerEgresadosAprobadosAsync(asignacion.IdPrograma);
+            var fechaGeneracion = DateTime.Now;
+            var pdf = PdfGenerator.GenerarReporteRespuestas(
+                asignacion.ProgramaEducativo.NombrePrograma,
+                fechaGeneracion,
+                seccionesActualizadas,
+                egresadosActualizados);
+
+            await JS.InvokeVoidAsync(
+                "followerFiles.downloadPdf",
+                $"Respuestas_{LimpiarNombreArchivo(asignacion.ProgramaEducativo.Siglas)}_{fechaGeneracion:yyyyMMdd_HHmm}.pdf",
+                Convert.ToBase64String(pdf));
+
+            mensaje = $"Reporte generado con los datos actuales de {egresadosActualizados.Count} egresados aprobados e incluye todas las preguntas del programa.";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "No fue posible generar o descargar el reporte de respuestas.");
+            errorDescarga = "No fue posible generar o descargar el PDF. Intenta nuevamente más tarde.";
+        }
+        finally
+        {
+            descargando = false;
+        }
+    }
+
+    private Task<List<Egresado>> ObtenerEgresadosAprobadosAsync(int idPrograma) =>
+        DbContext.Egresados
+            .AsNoTracking()
+            .Where(egresado => egresado.IdPrograma == idPrograma && egresado.EstadoSolicitud == "Aprobado")
+            .Include(egresado => egresado.ValoresCamposPersonalizados)
+            .OrderBy(egresado => egresado.ApellidoPaterno)
+            .ThenBy(egresado => egresado.ApellidoMaterno)
+            .ThenBy(egresado => egresado.Nombres)
+            .ToListAsync();
+
+    private void SeleccionarPregunta(int idCampo)
+    {
+        idCampoSeleccionado = idCampo;
+        errorDescarga = null;
+        mensaje = null;
+    }
+
+    private void AlCambiarSeccion()
+    {
+        var primeraPregunta = PreguntasFiltradas.FirstOrDefault();
+        if (primeraPregunta is not null)
+        {
+            idCampoSeleccionado = primeraPregunta.IdCampo;
+        }
+    }
+
+    private int ContarRespuestas(CampoPersonalizado pregunta) => ObtenerRespuestas(pregunta).Count;
+
+    private List<RespuestaVista> ObtenerRespuestas(CampoPersonalizado pregunta) =>
+        egresados.Select(egresado =>
+            {
+                var valor = egresado.ValoresCamposPersonalizados
+                    .Where(item => item.IdCampo == pregunta.IdCampo)
+                    .OrderByDescending(item => item.IdValor)
+                    .FirstOrDefault();
+                return valor is null || string.IsNullOrWhiteSpace(valor.ValorCapturado)
+                    ? null
+                    : new RespuestaVista(
+                        egresado.IdEgresado,
+                        $"{egresado.Nombres} {egresado.ApellidoPaterno} {egresado.ApellidoMaterno}".Trim(),
+                        egresado.FechaEgreso,
+                        valor.ValorCapturado);
+            })
+            .Where(respuesta => respuesta is not null)
+            .Select(respuesta => respuesta!)
+            .ToList();
+
+    private static List<OpcionVista> OpcionesDistribucion(
+        CampoPersonalizado pregunta,
+        IReadOnlyList<RespuestaVista> respuestas)
+    {
+        if (pregunta.Opciones.Count == 0 || respuestas.Count == 0)
+        {
+            return new();
+        }
+
+        return pregunta.Opciones
+            .OrderBy(opcion => opcion.Orden)
+            .Select(opcion =>
+            {
+                var cantidad = respuestas.Count(respuesta =>
+                    string.Equals(respuesta.Valor.Trim(), opcion.ValorOpcion.Trim(), StringComparison.OrdinalIgnoreCase));
+                return new OpcionVista(opcion.ValorOpcion, cantidad, cantidad * 100d / respuestas.Count);
+            })
+            .ToList();
+    }
+
+    private static string TipoCampo(CampoPersonalizado.TipoDatoCampo tipo) => tipo switch
+    {
+        CampoPersonalizado.TipoDatoCampo.TextoCorto => "Texto corto",
+        CampoPersonalizado.TipoDatoCampo.TextoArea => "Respuesta abierta",
+        CampoPersonalizado.TipoDatoCampo.ListaDesplegable => "Opción múltiple",
+        CampoPersonalizado.TipoDatoCampo.Casilla => "Casilla",
+        CampoPersonalizado.TipoDatoCampo.Fecha => "Fecha",
+        CampoPersonalizado.TipoDatoCampo.EscalaValoracion => "Escala de valoración",
+        _ => "Pregunta"
+    };
+
+    private static string Iniciales(string nombre)
+    {
+        var partes = nombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return string.Concat(partes.Take(2).Select(parte => char.ToUpperInvariant(parte[0])));
+    }
+
+    private static string LimpiarNombreArchivo(string nombre) =>
+        string.Join("_", nombre.Split(Path.GetInvalidFileNameChars(), StringSplitOptions.RemoveEmptyEntries));
+
+    private sealed record RespuestaVista(int IdEgresado, string Nombre, int? FechaEgreso, string Valor);
+    private sealed record OpcionVista(string Nombre, int Cantidad, double Porcentaje);
+}

@@ -493,7 +493,7 @@
         descargandoCv = true;
         try
         {
-            var pdf = CvPdfGenerator.Generar(egresado);
+            var pdf = PdfGenerator.GenerarCv(egresado);
             await JS.InvokeVoidAsync("followerFiles.downloadPdf",
                 $"CV_{NombreCompleto.Replace(' ', '_')}.pdf",
                 Convert.ToBase64String(pdf));

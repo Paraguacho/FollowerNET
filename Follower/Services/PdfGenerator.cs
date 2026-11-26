@@ -4,11 +4,11 @@ using Follower.Models;
 
 namespace Follower.Services;
 
-public static class CvPdfGenerator
+public static class PdfGenerator
 {
     private static readonly CultureInfo CulturaEspanol = CultureInfo.GetCultureInfo("es-MX");
 
-    public static byte[] Generar(Egresado egresado)
+    public static byte[] GenerarCv(Egresado egresado)
     {
         var lineas = new List<PdfLine>();
         AgregarTextoEnvuelto(lineas, NombreCompleto(egresado), PdfLineStyle.Nombre);
@@ -94,6 +94,80 @@ public static class CvPdfGenerator
         return CrearPdf(lineas);
     }
 
+    public static byte[] GenerarReporteRespuestas(
+        string nombrePrograma,
+        DateTime fechaGeneracion,
+        IReadOnlyList<SeccionPersonalizada> secciones,
+        IReadOnlyList<Egresado> egresados)
+    {
+        var lineas = new List<PdfLine>();
+        AgregarTextoEnvuelto(lineas, "Respuestas recopiladas", PdfLineStyle.Nombre);
+        AgregarTextoEnvuelto(lineas, nombrePrograma, PdfLineStyle.Subtitulo);
+        AgregarDato(lineas, "Generado el", fechaGeneracion.ToString("dd MMMM yyyy, HH:mm", CulturaEspanol));
+
+        var preguntas = secciones
+            .OrderBy(seccion => seccion.OrdenAparicion)
+            .SelectMany(seccion => seccion.Campos
+                .OrderBy(campo => campo.Orden)
+                .Select(campo => (Seccion: seccion, Campo: campo)))
+            .ToList();
+        var idsPregunta = preguntas.Select(pregunta => pregunta.Campo.IdCampo).ToHashSet();
+        var respuestasRegistradas = egresados.Sum(egresado =>
+            egresado.ValoresCamposPersonalizados
+                .Where(valor => idsPregunta.Contains(valor.IdCampo))
+                .OrderByDescending(valor => valor.IdValor)
+                .GroupBy(valor => valor.IdCampo)
+                .Count(grupo => !string.IsNullOrWhiteSpace(grupo.First().ValorCapturado)));
+
+        AgregarDato(lineas, "Egresados incluidos", egresados.Count.ToString(CulturaEspanol));
+        AgregarDato(lineas, "Respuestas registradas", respuestasRegistradas.ToString(CulturaEspanol));
+
+        if (egresados.Count == 0)
+        {
+            AgregarSeccion(lineas, "RESULTADOS");
+            AgregarTextoEnvuelto(lineas, "No hay egresados aprobados para este programa.", PdfLineStyle.Cuerpo);
+        }
+        else if (preguntas.Count == 0)
+        {
+            AgregarSeccion(lineas, "RESULTADOS");
+            AgregarTextoEnvuelto(lineas, "Este programa todavía no tiene preguntas configuradas.", PdfLineStyle.Cuerpo);
+        }
+        else
+        {
+            foreach (var egresado in egresados
+                .OrderBy(item => item.ApellidoPaterno)
+                .ThenBy(item => item.ApellidoMaterno)
+                .ThenBy(item => item.Nombres))
+            {
+                AgregarSeccion(lineas, NombreCompleto(egresado));
+                AgregarDato(lineas, "Año de egreso", egresado.FechaEgreso?.ToString(CulturaEspanol));
+
+                var valores = egresado.ValoresCamposPersonalizados
+                    .OrderByDescending(valor => valor.IdValor)
+                    .GroupBy(valor => valor.IdCampo)
+                    .ToDictionary(grupo => grupo.Key, grupo => grupo.First().ValorCapturado);
+
+                foreach (var grupo in preguntas.GroupBy(pregunta => pregunta.Seccion.IdSeccion))
+                {
+                    lineas.Add(new PdfLine(grupo.First().Seccion.TituloSeccion, PdfLineStyle.Entrada));
+                    foreach (var pregunta in grupo)
+                    {
+                        lineas.Add(new PdfLine(pregunta.Campo.NombreEtiqueta, PdfLineStyle.Secundario));
+                        AgregarTextoEnvuelto(
+                            lineas,
+                            valores.TryGetValue(pregunta.Campo.IdCampo, out var respuesta)
+                                && !string.IsNullOrWhiteSpace(respuesta)
+                                    ? respuesta
+                                    : "Sin respuesta",
+                            PdfLineStyle.Cuerpo);
+                    }
+                }
+            }
+        }
+
+        return CrearPdf(lineas, "RESPUESTAS RECOPILADAS", "Egresados · MIED");
+    }
+
     private static string NombreCompleto(Egresado egresado) =>
         $"{egresado.Nombres} {egresado.ApellidoPaterno} {egresado.ApellidoMaterno}".Trim();
 
@@ -150,7 +224,10 @@ public static class CvPdfGenerator
         }
     }
 
-    private static byte[] CrearPdf(IReadOnlyList<PdfLine> lineas)
+    private static byte[] CrearPdf(
+        IReadOnlyList<PdfLine> lineas,
+        string tituloDocumento = "CURRÍCULUM VITAE",
+        string textoPie = "Egresados · MIED")
     {
         const float margenIzquierdo = 54;
         const float margenDerecho = 558;
@@ -202,7 +279,9 @@ public static class CvPdfGenerator
                 numeroFuenteNegrita,
                 margenIzquierdo,
                 margenDerecho,
-                inicioY);
+                inicioY,
+                tituloDocumento,
+                textoPie);
             var flujo = Encoding.Latin1.GetBytes(contenido);
 
             objetos.Add(Ascii(
@@ -249,10 +328,12 @@ public static class CvPdfGenerator
         int numeroFuenteNegrita,
         float margenIzquierdo,
         float margenDerecho,
-        float inicioY)
+        float inicioY,
+        string tituloDocumento,
+        string textoPie)
     {
         var contenido = new StringBuilder();
-        Texto(contenido, "CURRÍCULUM VITAE", margenIzquierdo, 770, 8, numeroFuenteNegrita, "0.00 0.20 0.40");
+        Texto(contenido, Normalizar(tituloDocumento), margenIzquierdo, 770, 8, numeroFuenteNegrita, "0.00 0.20 0.40");
         contenido.Append("0.82 0.86 0.90 RG 0.7 w ")
             .Append(margenIzquierdo).Append(" 758 m ")
             .Append(margenDerecho).Append(" 758 l S\n");
@@ -285,7 +366,7 @@ public static class CvPdfGenerator
 
         contenido.Append("0.82 0.86 0.90 RG 0.5 w 54 42 m 558 42 l S\n");
         Texto(contenido, $"Página {numeroPagina} de {totalPaginas}", 54, 28, 8, numeroFuenteRegular, "0.36 0.40 0.45");
-        contenido.Append("BT /F1 8 Tf 0.36 0.40 0.45 rg 1 0 0 1 490 28 Tm (Egresados · MIED) Tj ET\n");
+        Texto(contenido, textoPie, 430, 28, 8, numeroFuenteRegular, "0.36 0.40 0.45");
         return contenido.ToString();
     }
 
