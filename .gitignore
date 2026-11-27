@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /Follower/appsettings.json
+# Uploaded academic evidence is private and must not be committed.
+Follower/App_Data/Evidencias/

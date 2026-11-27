@@ -31,6 +31,7 @@ namespace Follower
             builder.Services.AddScoped<IRegistroEgresadoService, RegistroEgresadoService>();
             builder.Services.AddScoped<ISolicitudesIngresoService, SolicitudesIngresoService>();
             builder.Services.AddScoped<IEgresadosBusquedaService, EgresadosBusquedaService>();
+            builder.Services.AddScoped<PdfEvidenceStorage>();
 
             var app = builder.Build();
 

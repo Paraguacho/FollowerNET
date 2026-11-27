@@ -1,6 +1,10 @@
 ﻿@using Follower.Models
 @using Follower.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 @inject IEgresadoService EgresadoService
+@inject PdfEvidenceStorage EvidenceStorage
+@inject IJSRuntime JS
 
 <div class="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 
@@ -91,6 +95,18 @@
                                     </div>
                                 }
                             </div>
+                            @if (EvidenceStorage.IsStoredEvidence(rec.ArchivoEvidencia))
+                            {
+                                <button type="button" @onclick="() => DescargarEvidencia(rec.ArchivoEvidencia)" class="inline-block mt-3 text-sm text-[#003366] hover:underline">
+                                    Descargar constancia o evidencia
+                                </button>
+                            }
+                            else if (EvidenceStorage.GetExternalUrl(rec.ArchivoEvidencia) is string evidenciaUrl)
+                            {
+                                <a href="@evidenciaUrl" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 text-sm text-[#003366] hover:underline">
+                                    Ver constancia o evidencia
+                                </a>
+                            }
                         </div>
                     }
                 </div>
@@ -248,11 +264,19 @@
                                 <div class="flex items-center justify-center w-full">
                                     <label class="flex flex-col items-center justify-center w-full h-16 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
                                         <div class="flex flex-col items-center justify-center pt-2 pb-2">
-                                            <p class="text-xs text-gray-500"><span class="font-semibold">Adjuntar PDF</span> (Max. 5MB)</p>
+                                            <p class="text-xs text-gray-500"><span class="font-semibold">@(archivoSeleccionado?.Name ?? "Adjuntar PDF")</span> (Máx. 5 MB)</p>
                                         </div>
-                                        <input type="file" class="hidden" accept=".pdf" />
+                                        <InputFile OnChange="SeleccionarArchivo" class="hidden" accept=".pdf,application/pdf" />
                                     </label>
                                 </div>
+                                @if (!string.IsNullOrEmpty(errorArchivo))
+                                {
+                                    <p class="text-red-500 text-xs mt-1">@errorArchivo</p>
+                                }
+                                else if (archivoSeleccionado == null && !string.IsNullOrEmpty(nuevoRegistro.ArchivoEvidencia))
+                                {
+                                    <p class="text-xs text-gray-500 mt-1">Hay una evidencia guardada. Selecciona otro PDF para reemplazarla.</p>
+                                }
                             </div>
                         </div>
 
@@ -284,6 +308,8 @@
     private ReconocimientoAcademico nuevoRegistro = new();
     private ReconocimientoAcademico? registroEnEdicion = null;
     private Dictionary<string, string> errores = new();
+    private IBrowserFile? archivoSeleccionado;
+    private string? errorArchivo;
 
     private void ToggleExpandido() => expandido = !expandido;
 
@@ -296,7 +322,55 @@
         nuevoRegistro = new ReconocimientoAcademico();
         fechaInicioTemp = null;
         fechaFinTemp = null;
+        archivoSeleccionado = null;
+        errorArchivo = null;
         mostrandoFormulario = true;
+    }
+
+    private void SeleccionarArchivo(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        if (!string.Equals(Path.GetExtension(file.Name), ".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            archivoSeleccionado = null;
+            errorArchivo = "Selecciona un archivo PDF.";
+            return;
+        }
+
+        if (file.Size == 0 || file.Size > PdfEvidenceStorage.MaxFileSize)
+        {
+            archivoSeleccionado = null;
+            errorArchivo = "El PDF debe pesar más de 0 y como máximo 5 MB.";
+            return;
+        }
+
+        archivoSeleccionado = file;
+        errorArchivo = null;
+    }
+
+    private async Task DescargarEvidencia(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath) || !EvidenceStorage.IsStoredEvidence(relativePath))
+        {
+            return;
+        }
+
+        try
+        {
+            await using var stream = EvidenceStorage.OpenReadStream(relativePath);
+            using var streamReference = new DotNetStreamReference(stream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", "evidencia.pdf", streamReference);
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Error al abrir evidencia: {ex.Message}");
+            await OnNotificar.InvokeAsync("No se pudo abrir la evidencia.");
+        }
+        catch (JSException ex)
+        {
+            Console.WriteLine($"Error al descargar evidencia: {ex.Message}");
+            await OnNotificar.InvokeAsync("No se pudo descargar la evidencia.");
+        }
     }
 
     private void IniciarEdicion(ReconocimientoAcademico rec)
@@ -321,6 +395,8 @@
 
         fechaInicioTemp = rec.AnoInicio is >= 1950 and <= 2100 ? new DateTime(rec.AnoInicio.Value, 1, 1) : null;
         fechaFinTemp = rec.AnoFin is >= 1950 and <= 2100 ? new DateTime(rec.AnoFin.Value, 1, 1) : null;
+        archivoSeleccionado = null;
+        errorArchivo = null;
         mostrandoFormulario = true;
     }
 
@@ -381,10 +457,44 @@
 
         guardando = true;
 
+        string? archivoNuevo = null;
+        try
+        {
+            if (archivoSeleccionado != null)
+            {
+                archivoNuevo = await EvidenceStorage.SaveAsync(archivoSeleccionado);
+            }
+        }
+        catch (InvalidDataException ex)
+        {
+            errorArchivo = ex.Message;
+            guardando = false;
+            return;
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Error al subir evidencia: {ex.Message}");
+            errorArchivo = "No se pudo guardar el archivo. Inténtalo de nuevo.";
+            guardando = false;
+            return;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"Error de permisos al guardar evidencia: {ex.Message}");
+            errorArchivo = "No se pudo guardar el archivo. Inténtalo de nuevo.";
+            guardando = false;
+            return;
+        }
+
         var esEdicion = registroEnEdicion != null;
         var target = registroEnEdicion;
         var copiaNuevo = nuevoRegistro;
         ReconocimientoAcademico? respaldo = null;
+        var archivoAnterior = target?.ArchivoEvidencia;
+        if (archivoNuevo != null)
+        {
+            copiaNuevo.ArchivoEvidencia = archivoNuevo;
+        }
 
         copiaNuevo.AnoInicio = fechaInicioTemp!.Value.Year;
         copiaNuevo.AnoFin = (nuevoRegistro.TipoRegistro == "Premio o Distinción"
@@ -426,13 +536,34 @@
             EgresadoModel.ReconocimientosAcademicos.Add(copiaNuevo);
         }
 
-        // Cierre instantáneo
-        Cancelar();
+        errores.Clear();
+        registroEnEdicion = null;
+        nuevoRegistro = new ReconocimientoAcademico();
+        fechaInicioTemp = null;
+        fechaFinTemp = null;
+        archivoSeleccionado = null;
+        errorArchivo = null;
+        mostrandoFormulario = false;
         StateHasChanged();
 
         try
         {
             await EgresadoService.ActualizarAsync(EgresadoModel);
+            if (archivoNuevo != null && !string.IsNullOrEmpty(archivoAnterior))
+            {
+                try
+                {
+                    EvidenceStorage.Delete(archivoAnterior);
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine($"No se pudo eliminar la evidencia anterior: {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.WriteLine($"No hay permisos para eliminar la evidencia anterior: {ex.Message}");
+                }
+            }
             await OnNotificar.InvokeAsync(esEdicion
                 ? "Registro actualizado exitosamente."
                 : "Registro guardado exitosamente.");
@@ -440,6 +571,21 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error al guardar distinción: {ex.Message}");
+            if (archivoNuevo != null)
+            {
+                try
+                {
+                    EvidenceStorage.Delete(archivoNuevo);
+                }
+                catch (IOException cleanupException)
+                {
+                    Console.WriteLine($"No se pudo limpiar el archivo subido: {cleanupException.Message}");
+                }
+                catch (UnauthorizedAccessException cleanupException)
+                {
+                    Console.WriteLine($"No hay permisos para limpiar el archivo subido: {cleanupException.Message}");
+                }
+            }
             if (esEdicion && target != null && respaldo != null)
             {
                 target.TipoRegistro = respaldo.TipoRegistro;
@@ -472,6 +618,8 @@
         nuevoRegistro = new ReconocimientoAcademico();
         fechaInicioTemp = null;
         fechaFinTemp = null;
+        archivoSeleccionado = null;
+        errorArchivo = null;
         mostrandoFormulario = false;
     }
 
@@ -482,6 +630,19 @@
             if (rec.IdReconomiento > 0)
             {
                 await EgresadoService.EliminarReconocimientoAcademicoAsync(rec);
+            }
+
+            try
+            {
+                EvidenceStorage.Delete(rec.ArchivoEvidencia);
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"No se pudo eliminar el archivo de evidencia: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.WriteLine($"No hay permisos para eliminar el archivo de evidencia: {ex.Message}");
             }
 
             EgresadoModel.ReconocimientosAcademicos.Remove(rec);

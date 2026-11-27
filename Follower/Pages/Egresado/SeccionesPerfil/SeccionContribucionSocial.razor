@@ -1,6 +1,10 @@
 ﻿@using Follower.Models
 @using Follower.Services
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.JSInterop
 @inject IEgresadoService EgresadoService
+@inject PdfEvidenceStorage EvidenceStorage
+@inject IJSRuntime JS
 
 <div class="mb-6 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
 
@@ -79,6 +83,18 @@
                                     <p class="text-sm text-slate-800 line-clamp-3">@cont.Resultados</p>
                                 </div>
                             </div>
+                            @if (EvidenceStorage.IsStoredEvidence(cont.ArchivoEvidencia))
+                            {
+                                <button type="button" @onclick="() => DescargarEvidencia(cont.ArchivoEvidencia)" class="inline-block mt-3 text-sm text-[#003366] hover:underline">
+                                    Descargar evidencia
+                                </button>
+                            }
+                            else if (EvidenceStorage.GetExternalUrl(cont.ArchivoEvidencia) is string evidenciaUrl)
+                            {
+                                <a href="@evidenciaUrl" target="_blank" rel="noopener noreferrer" class="inline-block mt-3 text-sm text-[#003366] hover:underline">
+                                    Ver evidencia
+                                </a>
+                            }
                         </div>
                     }
                 </div>
@@ -181,10 +197,18 @@
                                 <input type="text" @bind="nuevoRegistro.ArchivoEvidencia" placeholder="https://..." class="flex-1 border border-gray-300 rounded-md p-2 text-sm focus:ring-[#003366]" />
                                 <span class="text-xs text-gray-400 font-bold">O</span>
                                 <label class="flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md cursor-pointer bg-gray-50 hover:bg-gray-100 text-sm font-medium text-gray-700">
-                                    <span>Subir PDF</span>
-                                    <input type="file" class="hidden" accept=".pdf" />
+                                    <span>@(archivoSeleccionado?.Name ?? "Subir PDF")</span>
+                                    <InputFile OnChange="SeleccionarArchivo" class="hidden" accept=".pdf,application/pdf" />
                                 </label>
                             </div>
+                            @if (!string.IsNullOrEmpty(errorArchivo))
+                            {
+                                <p class="text-red-500 text-xs mt-1">@errorArchivo</p>
+                            }
+                            else if (archivoSeleccionado == null && !string.IsNullOrEmpty(nuevoRegistro.ArchivoEvidencia))
+                            {
+                                <p class="text-xs text-gray-500 mt-1">Hay una evidencia guardada. Selecciona otro PDF para reemplazarla.</p>
+                            }
                         </div>
                     </div>
 
@@ -215,6 +239,8 @@
     private ContribucionSocial nuevoRegistro = new();
     private ContribucionSocial? registroEnEdicion = null;
     private Dictionary<string, string> errores = new();
+    private IBrowserFile? archivoSeleccionado;
+    private string? errorArchivo;
 
     private void ToggleExpandido() => expandido = !expandido;
 
@@ -238,7 +264,55 @@
         errores.Clear();
         registroEnEdicion = null;
         nuevoRegistro = new ContribucionSocial();
+        archivoSeleccionado = null;
+        errorArchivo = null;
         mostrandoFormulario = true;
+    }
+
+    private void SeleccionarArchivo(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        if (!string.Equals(Path.GetExtension(file.Name), ".pdf", StringComparison.OrdinalIgnoreCase))
+        {
+            archivoSeleccionado = null;
+            errorArchivo = "Selecciona un archivo PDF.";
+            return;
+        }
+
+        if (file.Size == 0 || file.Size > PdfEvidenceStorage.MaxFileSize)
+        {
+            archivoSeleccionado = null;
+            errorArchivo = "El PDF debe pesar más de 0 y como máximo 5 MB.";
+            return;
+        }
+
+        archivoSeleccionado = file;
+        errorArchivo = null;
+    }
+
+    private async Task DescargarEvidencia(string? relativePath)
+    {
+        if (string.IsNullOrWhiteSpace(relativePath) || !EvidenceStorage.IsStoredEvidence(relativePath))
+        {
+            return;
+        }
+
+        try
+        {
+            await using var stream = EvidenceStorage.OpenReadStream(relativePath);
+            using var streamReference = new DotNetStreamReference(stream);
+            await JS.InvokeVoidAsync("downloadFileFromStream", "evidencia.pdf", streamReference);
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Error al abrir evidencia: {ex.Message}");
+            await OnNotificar.InvokeAsync("No se pudo abrir la evidencia.");
+        }
+        catch (JSException ex)
+        {
+            Console.WriteLine($"Error al descargar evidencia: {ex.Message}");
+            await OnNotificar.InvokeAsync("No se pudo descargar la evidencia.");
+        }
     }
 
     private void IniciarEdicion(ContribucionSocial cont)
@@ -258,6 +332,8 @@
             Resultados = cont.Resultados,
             ArchivoEvidencia = cont.ArchivoEvidencia
         };
+        archivoSeleccionado = null;
+        errorArchivo = null;
         mostrandoFormulario = true;
     }
 
@@ -304,9 +380,43 @@
 
         guardando = true;
 
+        string? archivoNuevo = null;
+        try
+        {
+            if (archivoSeleccionado != null)
+            {
+                archivoNuevo = await EvidenceStorage.SaveAsync(archivoSeleccionado);
+            }
+        }
+        catch (InvalidDataException ex)
+        {
+            errorArchivo = ex.Message;
+            guardando = false;
+            return;
+        }
+        catch (IOException ex)
+        {
+            Console.WriteLine($"Error al subir evidencia: {ex.Message}");
+            errorArchivo = "No se pudo guardar el archivo. Inténtalo de nuevo.";
+            guardando = false;
+            return;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            Console.WriteLine($"Error de permisos al guardar evidencia: {ex.Message}");
+            errorArchivo = "No se pudo guardar el archivo. Inténtalo de nuevo.";
+            guardando = false;
+            return;
+        }
+
         var esEdicion = registroEnEdicion != null;
         var target = registroEnEdicion;
         var copiaNuevo = nuevoRegistro;
+        var archivoAnterior = target?.ArchivoEvidencia;
+        if (archivoNuevo != null)
+        {
+            copiaNuevo.ArchivoEvidencia = archivoNuevo;
+        }
 
         ContribucionSocial? respaldo = null;
         if (esEdicion && target != null)
@@ -338,14 +448,33 @@
             EgresadoModel.ContribucionesSociales.Add(copiaNuevo);
         }
 
-        // Cierre instantáneo
         respondioSi = null;
-        Cancelar();
+        errores.Clear();
+        registroEnEdicion = null;
+        nuevoRegistro = new ContribucionSocial();
+        archivoSeleccionado = null;
+        errorArchivo = null;
+        mostrandoFormulario = false;
         StateHasChanged();
 
         try
         {
             await EgresadoService.ActualizarAsync(EgresadoModel);
+            if (archivoNuevo != null && !string.IsNullOrEmpty(archivoAnterior))
+            {
+                try
+                {
+                    EvidenceStorage.Delete(archivoAnterior);
+                }
+                catch (IOException ex)
+                {
+                    Console.WriteLine($"No se pudo eliminar la evidencia anterior: {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    Console.WriteLine($"No hay permisos para eliminar la evidencia anterior: {ex.Message}");
+                }
+            }
             await OnNotificar.InvokeAsync(esEdicion
                 ? "Contribución social actualizada exitosamente."
                 : "Contribución social registrada exitosamente.");
@@ -353,6 +482,21 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error al guardar contribución: {ex.Message}");
+            if (archivoNuevo != null)
+            {
+                try
+                {
+                    EvidenceStorage.Delete(archivoNuevo);
+                }
+                catch (IOException cleanupException)
+                {
+                    Console.WriteLine($"No se pudo limpiar el archivo subido: {cleanupException.Message}");
+                }
+                catch (UnauthorizedAccessException cleanupException)
+                {
+                    Console.WriteLine($"No hay permisos para limpiar el archivo subido: {cleanupException.Message}");
+                }
+            }
             if (esEdicion && target != null && respaldo != null)
             {
                 target.NombreActividad = respaldo.NombreActividad;
@@ -381,6 +525,8 @@
         errores.Clear();
         registroEnEdicion = null;
         nuevoRegistro = new ContribucionSocial();
+        archivoSeleccionado = null;
+        errorArchivo = null;
         mostrandoFormulario = false;
 
         if (!EgresadoModel.ContribucionesSociales.Any())
@@ -396,6 +542,19 @@
             if (cont.IdContribucion > 0)
             {
                 await EgresadoService.EliminarContribucionSocialAsync(cont);
+            }
+
+            try
+            {
+                EvidenceStorage.Delete(cont.ArchivoEvidencia);
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine($"No se pudo eliminar el archivo de evidencia: {ex.Message}");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                Console.WriteLine($"No hay permisos para eliminar el archivo de evidencia: {ex.Message}");
             }
 
             EgresadoModel.ContribucionesSociales.Remove(cont);
